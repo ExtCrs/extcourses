@@ -1,0 +1,22 @@
+[
+{
+    "id": 1,
+    "title_ru": "Основы",
+    "title_en": "Basics"
+},
+{
+    "id": 2,
+    "title_ru": "Лекции Конгрессов",
+    "title_en": "Congress Lectures"
+},
+{
+    "id": 3,
+    "title_ru": "Лекции ППК",
+    "title_en": "ACC Lectures"
+},
+{
+    "id": 4,
+    "title_ru": "Лекции",
+    "title_en": "Lectures"
+}
+]

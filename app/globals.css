@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: silk --default, night --prefersdark;
+}
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-display: "Oswald", "sans-serif";
+}
+
+.rsw-editor.rsw-editor {
+  @apply border border-secondary/20
+}
+.rsw-toolbar {
+  display: none !important;
+  margin: 0;
+  background: none !important;
+  border-radius: 0;
+}
+.rsw-editor.selection .rsw-toolbar {
+  margin-bottom: 0;
+  display: flex !important;
+}
+/* Скрываем кнопку "Link" */
+.rsw-toolbar button[title="Link"] {
+  display: none !important;
+}
+/* Скрываем кнопку "HTML mode" */
+.rsw-toolbar button[title="HTML mode"] {
+  display: none !important;
+}
+/* Скрываем селектор "Styles" */
+.rsw-toolbar select[title="Styles"] {
+  display: none !important;
+}
+/* Скрываем кнопку "Code" в dropdown если вдруг появится */
+.rsw-toolbar option,
+.rsw-toolbar option[value="3"] {
+  display: none !important;
+}
+/* Скрываем последний разделитель (если он единственный или последний) */
+.rsw-toolbar .rsw-separator:last-child {
+  display: none !important;
+}
+
+.rsw-btn {
+  @apply !text-base-content
+}
