@@ -9,7 +9,7 @@ import LessonsToCheck from '@/components/displays/LessonsToCheck'
 
 import { getTranslations } from '@/lib/i18n'
 import { loadOrgId } from '@/components/displays/current_course/utils'
-import { AcademicCapIcon, CheckIcon, PencilIcon, QueueListIcon, UserPlusIcon, UsersIcon } from '@heroicons/react/24/outline'
+import { CheckIcon, QueueListIcon, UsersIcon } from '@heroicons/react/24/outline'
 import CoursesTable from '@/components/displays/CoursesTable'
 
 export default function SupPage({ params }) {

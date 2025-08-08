@@ -198,7 +198,7 @@ const Auth = ({ lang = 'ru' }) => {
               onChange={() => setAuthType(null)}
             />
             <input
-              className="btn"
+              className="btn btn-primary"
               type="radio"
               name="auth"
               aria-label={t.auth.login_button}
@@ -206,7 +206,7 @@ const Auth = ({ lang = 'ru' }) => {
               onChange={() => setAuthType('login')}
             />
             <input
-              className="btn"
+              className="btn btn-outline"
               type="radio"
               name="auth"
               aria-label={t.auth.register_button}

@@ -5,6 +5,7 @@
     "ext_courses": "Extension courses",
     "select_org": "Select organization",
     "go_to_courses": "Go to courses",
+    "current_page": "Current page",
     "admin_panel": "Admin panel",
     "supervisor_panel": "Supervisor panel",
     "menu": "Menu",
@@ -56,7 +57,8 @@
   "roles": {
     "public": "Student",
     "supervisor": "Supervisor",
-    "admin": "Administrator"
+    "admin": "Administrator",
+    "all": "All"
   },
   "courses": {
     "view": "View",
@@ -64,13 +66,14 @@
     "signup": "Sign Up",
     "start_course": "Start Course",
     "course_started": "Course started",
-    "selected_category": "Selected categogy",
+    "selected_category": "Selected category",
     "course_not_found": "Course not found",
     "not_tasks_in_course": "No tasks for this lesson yet",
     "signup_modal_title": "Sign up for the course",
     "signup_modal_text": "Confirm your intention to enroll in the course",
     "signup_modal_close": "Close",
     "signup_modal_confirm": "Confirm",
+    "signup_modal_success": "You have successfully applied for the course",
     "signup_modal_pay_recommend": "Now make the payment and inform your supervisor",
     "signup_modal_auth_error": "Authorization error",
     "signup_modal_profile_error": "User profile not found",
@@ -96,16 +99,17 @@
     "clear_drawing": "Clear drawing?",
     "impossible_recover": "It will be impossible to recover it after clearing.",
     "your_answer": "Your answer",
+    "ask_question": "Ask question",
     "tasks_remaining": "tasks remaining",
     "lessons_remaining": "Lessons remaining",
     "accept_lesson": "Accept lesson",
     "reject_lesson": "Send back for revision",
     "tasksToCheck": "Tasks to review",
     "noTasks": "None",
-    "approve": "Одобрить",
+    "approve": "Approve",
     "answer_review": "Answer/To review",
-    "students_progress": "Student`s Progress",
-    "students_states": "Student`s States",
+    "students_progress": "Student's Progress",
+    "students_states": "Student's States",
     "alerts": {
       "locked": "Editing locked — lesson is being reviewed.",
       "corrected": "You have submitted the lesson with corrections. Wait for the supervisor to review them.",
@@ -129,16 +133,6 @@
       "": "☑️ Need to get done"
     }
   },
-  "status_recommendations": {
-    "SignUp": "You have enrolled in the course. Now please make the payment and inform your supervisor.",
-    "PaidConfirm": "Your payment has been confirmed. You can start now!",
-    "Started": "Keep moving forward in your course!",
-    "Bugged": "Review the words you might have skipped and make sure to clarify them.",
-    "AccountedFor": "We are waiting for your return as soon as possible. Please do not add extra time!",
-    "Completed": "Congratulations on completing the course! Hurry up and enroll in the next one.",
-    "ResignNeeded": "You have completed the course – that's great! Now let's go to the next one!",
-    "AllCoursesDone": "You have finished all the courses! A good reason to study everything again in another round!"
-  },
   "courseStates": {
     "all": "All",
     "SignUp": "Signed up",
@@ -149,6 +143,16 @@
     "Completed": "Completed",
     "ResignNeeded": "Retake",
     "AllCoursesDone": "All done"
+  },
+  "status_recommendations": {
+    "SignUp": "You have enrolled in the course. Now please make the payment and inform your supervisor.",
+    "PaidConfirm": "Your payment has been confirmed. You can start now!",
+    "Started": "Keep moving forward in your course!",
+    "Bugged": "Review the words you might have skipped and make sure to clarify them.",
+    "AccountedFor": "We are waiting for your return as soon as possible. Please do not add extra time!",
+    "Completed": "Congratulations on completing the course! Hurry up and enroll in the next one.",
+    "ResignNeeded": "You have completed the course – that's great! Now let's go to the next one!",
+    "AllCoursesDone": "You have finished all the courses! A good reason to study everything again in another round!"
   },
   "home": {
     "title": "Home",
@@ -165,7 +169,7 @@
     "confirm_password": "Confirm password",
     "login_button": "Log In",
     "register_button": "Register",
-    "registration_success": "Registration succeed",
+    "registration_success": "Registration succeeded",
     "fill_all_fields": "Please fill in all fields",
     "password_mismatch": "Passwords do not match",
     "login_success": "Login successful"
@@ -177,8 +181,8 @@
       "og": {
         "title": "Home — Extension Courses",
         "description": "Here you can do Scientology Extension Courses",
-        "image": "/images/og-home-ru.jpg",
-        "url": "https://mysite.com/ru "
+        "image": "/images/og-home-en.jpg",
+        "url": "https://mysite.com/en"
       }
     },
     "courses": {
@@ -187,18 +191,38 @@
       "og": {
         "title": "Courses List — Extension Courses",
         "description": "Here you can see Scientology Extension Courses",
-        "image": "/images/og-home-ru.jpg",
-        "url": "https://mysite.com/ru "
+        "image": "/images/og-home-en.jpg",
+        "url": "https://mysite.com/en"
       }
     },
     "course": {
       "title": "Extension Course",
-      "description": "Scientology extenstion course",
+      "description": "Scientology extension course",
       "og": {
         "title": "Extension course",
         "description": "Extension course",
-        "image": "/images/og-home-ru.jpg",
-        "url": "https://mysite.com/ru "
+        "image": "/images/og-home-en.jpg",
+        "url": "https://mysite.com/en"
+      }
+    },
+    "sup": {
+      "title": "Supervising | Supervisor Panel",
+      "description": "Section for reviewing and managing student assignments",
+      "og": {
+        "title": "Supervising — Supervisor Panel",
+        "description": "Interface for checking courses and student assignments",
+        "image": "/images/og-sup-en.jpg",
+        "url": "https://mysite.com/en/sup"
+      }
+    },
+    "admin": {
+      "title": "Adminstration | Admin Panel",
+      "description": "Chapter for service administrators",
+      "og": {
+        "title": "Administration — Admin Panel",
+        "description": "Admin interface",
+        "image": "/images/og-sup-ru.jpg",
+        "url": "https://mysite.com/ru/sup"
       }
     }
   }

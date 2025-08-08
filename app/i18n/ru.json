@@ -182,7 +182,7 @@
         "title": "Главная — Мой сайт",
         "description": "Описание для Open Graph на русском",
         "image": "/images/og-home-ru.jpg",
-        "url": "https://mysite.com/ru "
+        "url": "https://mysite.com/ru"
       }
     },
     "courses": {
@@ -192,7 +192,7 @@
         "title": "Список курсов | Заочные курсы",
         "description": "Список саентологических заочных курсов",
         "image": "/images/og-home-ru.jpg",
-        "url": "https://mysite.com/ru "
+        "url": "https://mysite.com/ru"
       }
     },
     "course": {
@@ -202,7 +202,27 @@
         "title": "Заочный курс",
         "description": "Заочный курс",
         "image": "/images/og-home-ru.jpg",
-        "url": "https://mysite.com/ru "
+        "url": "https://mysite.com/ru"
+      }
+    },
+    "sup": {
+      "title": "Супервизирование | Панель супервайзера",
+      "description": "Раздел для проверки и управления заданиями студентов",
+      "og": {
+        "title": "Супервизирование — Панель супервайзера",
+        "description": "Интерфейс проверки курсов и заданий студентов",
+        "image": "/images/og-sup-ru.jpg",
+        "url": "https://mysite.com/ru/sup"
+      }
+    },
+    "admin": {
+      "title": "Администрирование | Панель администратора",
+      "description": "Раздел для администрования сервиса",
+      "og": {
+        "title": "Администрирование — Панель администратора",
+        "description": "Интерфейс проверки администрирования сервиса",
+        "image": "/images/og-sup-ru.jpg",
+        "url": "https://mysite.com/ru/sup"
       }
     }
   }
