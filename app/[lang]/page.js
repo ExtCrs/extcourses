@@ -47,7 +47,7 @@ export default function Home({ params }) {
 
       {/* Отображение логотипа в зависимости от NEXT_PUBLIC_ORG */}
       {orgEnv === '1' ? (
-        <NovisLogo className="mx-auto w-fit max-w-1/2 my-20" />
+        <NovisLogo className="mx-auto w-fit lg:max-w-1/2 md:max-w-2/3 my-20" />
       ) : (
         <ScnLogo className="mx-auto w-64 mb-6" />
       )}
