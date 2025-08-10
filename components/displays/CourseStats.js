@@ -105,12 +105,12 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
       <div className="stats bg-base-300 ring-1 ring-primary/30 stats-vertical w-full">
         <div className="stat flex items-center">
           <div className="avatar avatar-placeholder">
-            <div className="bg-neutral text-neutral-content w-16 rounded-full">
-              <span className="text-xl">404</span>
+            <div className="bg-secondary text-secondary-content w-16 rounded-full">
+              <span className="text-xl">🫵</span>
             </div>
           </div>
           <div className="stat-desc text-lg text-base-content/60">
-            {t.courses.course_not_found}
+            {t.courses.lets_signup}
           </div>
         </div>
       </div>
@@ -119,7 +119,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
 
   // Определяем текущий урок
   const currentLesson = lessons.find(lesson => lesson.status === 'in_progress')
-  const currentLessonNo = currentLesson?.lesson_id || '👆'
+  const currentLessonNo = currentLesson?.lesson_id || '👇'
 
   // Уроки
   const totalLessons = courseInfo.total_lessons || lessons.length
@@ -185,7 +185,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
               </div>
             </div>
             <div className="stat-title">{t.courses.lesson}</div>
-            <div className="stat-value">{currentLessonNo}</div>
+            <div className="stat-value justify-center flex animate-bounce">{currentLessonNo}</div>
             <div className="stat-actions">
               <Link 
                 className="btn btn-xs btn-primary"

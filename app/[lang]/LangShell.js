@@ -26,8 +26,11 @@ export default function LangShell({ children, lang = 'ru' }) {
 
   // Переменная окружения доступна на клиенте (начинается с NEXT_PUBLIC_)
   const orgEnv = process.env.NEXT_PUBLIC_ORG
+  const orgEnvId = Number.isFinite(Number(orgEnv)) ? Number(orgEnv) : undefined
 
-  // Следим за авторизацией пользователя
+  // ----------------------------
+  // Подписка на авторизацию
+  // ----------------------------
   useEffect(() => {
     let isMounted = true
 
@@ -49,19 +52,48 @@ export default function LangShell({ children, lang = 'ru' }) {
     }
   }, [])
 
-  // Тема + название организации пользователя
+  // ----------------------------
+  // Тема + название организации
+  // ----------------------------
   useEffect(() => {
     let isMounted = true
 
-    // Тема оформления
+    // 1) Тема оформления
     try {
       const savedTheme = localStorage.getItem('theme')
       const theme = savedTheme === 'night' ? 'night' : 'silk'
       document.documentElement.setAttribute('data-theme', theme)
     } catch { /* ignore */ }
 
-    // Название организации
-    const fetchOrg = async () => {
+    // 2) Название организации
+    const fetchOrgNameById = async (orgId) => {
+      if (!orgId) {
+        if (isMounted) setOrgName('')
+        return
+      }
+      const orgNameField = lang === 'ru' ? 'name_ru' : 'name_en'
+      const { data: org, error } = await supabase
+        .from('orgs')
+        .select(orgNameField)
+        .eq('id', orgId)
+        .single()
+
+      if (!isMounted) return
+      if (error || !org?.[orgNameField]) {
+        setOrgName('')
+      } else {
+        setOrgName(org[orgNameField])
+      }
+    }
+
+    const resolveOrgName = async () => {
+      // Приоритет №1: берём из переменной окружения NEXT_PUBLIC_ORG (если она задана валидным числом)
+      if (orgEnvId) {
+        await fetchOrgNameById(orgEnvId)
+        return
+      }
+
+      // Приоритет №2 (fallback, как было раньше): из профиля пользователя current_org_id
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         if (isMounted) setOrgName('')
@@ -79,25 +111,13 @@ export default function LangShell({ children, lang = 'ru' }) {
         return
       }
 
-      const orgNameField = lang === 'ru' ? 'name_ru' : 'name_en'
-      const { data: org, error: orgError } = await supabase
-        .from('orgs')
-        .select(orgNameField)
-        .eq('id', profile.current_org_id)
-        .single()
-
-      if (orgError || !org?.[orgNameField]) {
-        if (isMounted) setOrgName('')
-        return
-      }
-
-      if (isMounted) setOrgName(org[orgNameField])
+      await fetchOrgNameById(profile.current_org_id)
     }
 
-    fetchOrg()
+    resolveOrgName()
 
     return () => { isMounted = false }
-  }, [lang])
+  }, [lang, orgEnvId])
 
   // Корневой app/layout.js уже вешает классы на <body>.
   // Здесь строим только внутреннюю структуру страницы.
@@ -130,7 +150,9 @@ export default function LangShell({ children, lang = 'ru' }) {
             prefetch={false}
             className="btn btn-link uppercase text-secondary no-underline hover:!no-underline"
           >
-            {orgEnv === '1'
+            {/* Логотип оставляем по прежнему условию:
+               orgEnv === '1' → NovisLogo, иначе → ScnLogo */}
+            {String(orgEnv) === '1'
               ? <NovisLogo className="mx-auto w-28 mt-1 mr-2" monochrome />
               : <ScnLogo className="mx-auto w-12 mr-2" monochrome />
             }

@@ -5,10 +5,14 @@ import { supabase } from '@/lib/supabase/client'
 import { getTranslations } from '@/lib/i18n'
 import coursesList from '@/data/courses.json'
 import dynamic from 'next/dynamic'
-import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 
+// Динамический импорт экрана проверки курса
 const CheckCourse = dynamic(() => import('@/components/displays/CheckCourse'), { ssr: false })
 
+/**
+ * Формирует карту id курса → локализованное название из локального файла
+ */
 function getCoursesMapFromFile(lang) {
   const map = {}
   coursesList.forEach(course => {
@@ -22,14 +26,18 @@ function getCoursesMapFromFile(lang) {
   return map
 }
 
+/**
+ * Возвращает общее количество уроков по id курса (для прогресса)
+ */
 function getTotalLessons(courseId) {
   const course = coursesList.find(c => c.id?.toString() === courseId?.toString())
   return course?.total_lessons || 1
 }
 
-export default function SupCoursesView({ lang = "ru", orgId }) {
+export default function SupCoursesView({ lang = 'ru', orgId }) {
   const { t } = getTranslations(lang, 'common')
 
+  // ---- Состояния ----
   const [students, setStudents] = useState([])
   const [coursesMap, setCoursesMap] = useState({})
   const [total, setTotal] = useState(0)
@@ -38,18 +46,19 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
   const [errorText, setErrorText] = useState('')
   const [search, setSearch] = useState('')
   const [lastSearch, setLastSearch] = useState('')
-  const [selected, setSelected] = useState([])
-  const [allSelected, setAllSelected] = useState(false)
-  const [showActions, setShowActions] = useState(false)
-  const [isChecking, setIsChecking] = useState(false)
+  const [selected, setSelected] = useState([])          // Выбранные профили (id)
+  const [allSelected, setAllSelected] = useState(false) // Флажок «выбрать всех» в текущей странице
+  const [isChecking, setIsChecking] = useState(false)   // Переход в режим проверки
   const PAGE_SIZE = 12
 
   const isFirstLoad = useRef(true)
 
+  // Карту названий курсов под язык
   useEffect(() => {
     setCoursesMap(getCoursesMapFromFile(lang))
   }, [lang])
 
+  // Загрузка списка студентов
   useEffect(() => {
     if (!orgId) return
     if (isFirstLoad.current) {
@@ -60,6 +69,12 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
     fetchStudents(lastSearch)
   }, [page, lastSearch, lang, orgId])
 
+  /**
+   * Загрузка студентов из представления students_with_lesson_counts
+   * - фильтр по организации
+   * - поиск по ФИО/почте/телефону (если введено ≥ 3 символов)
+   * - пагинация
+   */
   async function fetchStudents(appliedSearch = '') {
     setLoading(true)
     setErrorText('')
@@ -76,7 +91,9 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
     const from = (page - 1) * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
 
-    const { data, count, error } = await query.range(from, to).order('created_at', { ascending: false })
+    const { data, count, error } = await query
+      .range(from, to)
+      .order('created_at', { ascending: false })
 
     setLoading(false)
 
@@ -88,18 +105,26 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
     } else {
       setStudents(data || [])
       setTotal(count || 0)
+      // Сброс выделения при обновлении списка
       setSelected([])
       setAllSelected(false)
-      setShowActions(false)
     }
   }
 
+  /**
+   * Получить локализованное название курса по его id
+   */
   function getUserCourseTitle(courseId) {
     if (!courseId) return t.common.noCourse
     const title = coursesMap[courseId.toString()]
     return title || courseId
   }
 
+  /**
+   * Обработчик строки поиска:
+   * - начинаем искать с 3 символов
+   * - при очистке — сбрасываем фильтр
+   */
   function handleSearch(e) {
     const value = e.target.value
     setSearch(value)
@@ -108,6 +133,9 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
     else if (value.length >= 3) setLastSearch(value)
   }
 
+  /**
+   * Переключение выбора конкретного пользователя
+   */
   function handleSelect(id) {
     let next
     if (selected.includes(id)) {
@@ -116,39 +144,44 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
       next = [...selected, id]
     }
     setSelected(next)
-    setShowActions(next.length > 0)
     setAllSelected(next.length === students.length && students.length > 0)
   }
 
+  /**
+   * Выделить/снять выделение со всех строк текущей страницы
+   * (Кнопка оставлена для удобства, но действие «Проверить курс»
+   * всё равно доступно только при ровно одном выбранном студенте)
+   */
   function handleSelectAll() {
     if (allSelected) {
       setSelected([])
       setAllSelected(false)
-      setShowActions(false)
     } else {
       const ids = students.map(u => u.id)
       setSelected(ids)
       setAllSelected(true)
-      setShowActions(ids.length > 0)
     }
   }
 
-  async function handleAction(action) {
-    if (action === 'delete') {
-      await supabase.from('profiles').delete().in('id', selected)
-      fetchStudents(lastSearch)
-    }
-    if (action === 'checkCourse') {
+  /**
+   * Переход в режим проверки курса
+   * Доступен только при selected.length === 1
+   */
+  function handleCheckCourse() {
+    if (selected.length === 1) {
       setIsChecking(true)
     }
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
+  const canCheck = selected.length === 1 // Ровно один выбран — можно «Проверить курс»
 
+  // Если orgId ещё не подгружен — показываем спиннер
   if (!orgId) {
     return <div className="loading loading-infinity" />
   }
 
+  // Режим проверки курса одного студента
   if (isChecking && selected.length === 1) {
     return (
       <div className="relative pt-2">
@@ -165,7 +198,9 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
 
   return (
     <div>
+      {/* Панель поиска и действий */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
+        {/* Поиск */}
         <label className="input input-bordered flex items-center gap-2">
           <MagnifyingGlassIcon className="h-5 w-5 opacity-60" />
           <input
@@ -177,33 +212,25 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
           />
         </label>
 
-        {showActions && (
-          <details className="dropdown">
-            <summary className="btn btn-secondary">{t.common.actionsWithSelected}<ChevronDownIcon className="w-5 ml-1" /></summary>
-            <ul className="menu dropdown-content bg-base-200 rounded-lg z-1 w-full p-2 shadow-sm mt-px ring-1 ring-secondary/30">
-              <li>
-                <button onClick={() => handleAction('delete')} className="text-error">
-                  {t.common.deleteSelected}
-                </button>
-              </li>
-              {selected.length === 1 && (
-                <li>
-                  <button onClick={() => handleAction('checkCourse')}>
-                    {t.common.checkCourse || 'Проверить курс'}
-                  </button>
-                </li>
-              )}
-            </ul>
-          </details>
+        {/* Единственная кнопка действия — появляется ТОЛЬКО при выборе ровно одного студента */}
+        {canCheck && (
+          <button
+            className="btn btn-primary"
+            onClick={handleCheckCourse}
+          >
+            {t.common.checkCourse || 'Проверить курс'}
+          </button>
         )}
       </div>
 
+      {/* Ошибка загрузки */}
       {errorText && (
         <div className="alert alert-error mb-2">
           {errorText}
         </div>
       )}
 
+      {/* Таблица со списком студентов */}
       <div className="overflow-x-auto">
         <table className="table">
           <thead>
@@ -278,6 +305,7 @@ export default function SupCoursesView({ lang = "ru", orgId }) {
         </table>
       </div>
 
+      {/* Пагинация */}
       {total > PAGE_SIZE && (
         <div className="join justify-center flex mt-6">
           {Array.from({ length: totalPages }, (_, i) => i + 1)

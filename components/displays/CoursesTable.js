@@ -39,7 +39,15 @@ function getCoursesMapFromFile (lang) {
 }
 
 /**
- * Карта организаций { id: { id, name_ru, name_en } }
+ * Приводим orgId к числу или null
+ */
+function normalizeOrgId (val) {
+  const n = Number(val)
+  return Number.isFinite(n) ? n : null
+}
+
+/**
+ * Карта организаций { id: { id, name_ru, name_en } } — для свободного режима
  */
 async function getOrgMap () {
   const { data } = await supabase.from('orgs').select('id, name_ru, name_en')
@@ -48,8 +56,31 @@ async function getOrgMap () {
   return map
 }
 
+/**
+ * Загрузка одной организации по id — для фиксированного режима
+ */
+async function getOneOrg (id) {
+  const safeId = normalizeOrgId(id)
+  if (safeId === null) return {}
+  const { data } = await supabase
+    .from('orgs')
+    .select('id, name_ru, name_en')
+    .eq('id', safeId)
+    .maybeSingle()
+  if (!data) return {}
+  return { [data.id]: data }
+}
+
 export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   const { t } = getTranslations(lang, 'common')
+
+  // Строго используем словарь статусов из t.courses.courseStates
+  const dictCourseStates = t?.courseStates || {}
+
+  // Режимы
+  const isFixedOrgProp = (typeof orgId !== 'undefined')              // сам факт, что проп передан
+  const fixedOrgId = isFixedOrgProp ? normalizeOrgId(orgId) : null   // нормализованный orgId (число или null)
+  const isWaitingForOrg = isFixedOrgProp && fixedOrgId === null      // ждём, пока родитель передаст валидный id
 
   // --- Данные и их вспомогательные состояния
   const [courses, setCourses] = useState([])
@@ -69,7 +100,7 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   const [statusFilter, setStatusFilter] = useState('all')
   const [orgFilter, setOrgFilter] = useState('all')
 
-  // --- Поиск: "search" — текущее в инпуте, "lastSearch" — применённое значение (после дебаунса/Enter)
+  // --- Поиск
   const [search, setSearch] = useState('')
   const [lastSearch, setLastSearch] = useState('')
 
@@ -78,60 +109,60 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   const [allSelected, setAllSelected] = useState(false)
   const [showActions, setShowActions] = useState(false)
 
-  // --- Подтверждение удаления
+  // --- Модалка удаления
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(false)
 
   // --- Служебное
   const isFirstLoad = useRef(true)
-  const abortRef = useRef(null) // AbortController для отмены загрузки страницы
+  const abortRef = useRef(null)
 
   /**
    * Инициализация локальных справочников
+   * - Список курсов — из файла
+   * - Организации:
+   *   • свободный режим → загружаем все (для селекта и названий)
+   *   • фиксированный режим → загружаем только одну по fixedOrgId (для отображения названия)
    */
   useEffect(() => {
     setCoursesMap(getCoursesMapFromFile(lang))
-    getOrgMap().then(setOrgs)
-  }, [lang])
+
+    if (!isFixedOrgProp) {
+      getOrgMap().then(setOrgs)
+    } else {
+      // фиксированный режим
+      if (!isWaitingForOrg) {
+        getOneOrg(fixedOrgId).then(setOrgs)
+      } else {
+        setOrgs({})
+      }
+    }
+  }, [lang, isFixedOrgProp, fixedOrgId, isWaitingForOrg])
 
   /**
-   * Дебаунс поиска: применяем в lastSearch через 400мс
-   * - Пустая строка -> применяем сразу (сброс)
-   * - < 3 символов -> не применяем (lastSearch остаётся тем, что было)
-   * - >= 3 символов -> применяем через таймер
+   * Дебаунс поиска
    */
   useEffect(() => {
-    // Сброс страницы при новом вводе/поиске
     setPage(1)
-
-    // Если пользователь стёр поиск — применяем мгновенно
     if (search.length === 0) {
       setLastSearch('')
       return
     }
-
-    // Если строка короткая (<3), не трогаем lastSearch (старый фильтр остаётся)
     if (search.length > 0 && search.length < 3) {
       return
     }
-
-    // Дебаунс 400мс
-    const timer = setTimeout(() => {
-      setLastSearch(search)
-    }, 400)
-
+    const timer = setTimeout(() => setLastSearch(search), 400)
     return () => clearTimeout(timer)
   }, [search])
 
   /**
-   * Загрузка страницы данных (без подсчёта total)
-   * Вынесена в useCallback для стабильной ссылки
+   * Загрузка страницы данных
    */
   const fetchPage = useCallback(async (appliedSearch) => {
-    // Отменяем предыдущий незавершённый запрос
-    if (abortRef.current) {
-      abortRef.current.abort()
-    }
+    // В фиксированном режиме — не грузим, пока нет валидного числа
+    if (isFixedOrgProp && isWaitingForOrg) return
+
+    if (abortRef.current) abortRef.current.abort()
     const ac = new AbortController()
     abortRef.current = ac
 
@@ -139,7 +170,7 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
     setErrorText('')
 
     try {
-      // 1) Если есть поиск — сначала получаем список id студентов
+      // Поиск по профилям → список studentIds
       let studentIds = []
       if (appliedSearch && appliedSearch.length >= 3) {
         const { data: profs, error: profErr } = await supabase
@@ -150,10 +181,8 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
             `email.ilike.%${appliedSearch}%`,
             `phone.ilike.%${appliedSearch}%`
           ].join(','))
-
         if (profErr) throw profErr
         studentIds = (profs || []).map(x => x.id)
-        // Если никого не нашли — сразу отрисуем пусто
         if (studentIds.length === 0) {
           setCourses([])
           setSelected([])
@@ -164,7 +193,7 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
         }
       }
 
-      // 2) Основной запрос по courses
+      // Основной запрос по courses
       let query = supabase
         .from('courses')
         .select(`
@@ -181,21 +210,18 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
             phone,
             current_org_id
           )
-        `) // <--- без count, чтобы не делать «двойной» запрос на каждую страницу
+        `)
 
-      if (statusFilter !== 'all') {
-        query = query.eq('state', statusFilter)
-      }
+      if (statusFilter !== 'all') query = query.eq('state', statusFilter)
 
-      if (typeof orgId === 'number') {
-        query = query.eq('org_id', orgId)
+      // Фильтр по организации
+      if (isFixedOrgProp) {
+        query = query.eq('org_id', fixedOrgId)
       } else if (orgFilter !== 'all') {
         query = query.eq('org_id', orgFilter)
       }
 
-      if (studentIds.length > 0) {
-        query = query.in('student_id', studentIds)
-      }
+      if (studentIds.length > 0) query = query.in('student_id', studentIds)
 
       const from = (page - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
@@ -206,17 +232,13 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
 
       if (error) throw error
 
-      // Успех
       setCourses(data || [])
       setSelected([])
       setAllSelected(false)
       setShowActions(false)
       setErrorText('')
     } catch (e) {
-      if (e.name === 'AbortError') {
-        // Запрос отменён — ничего не делаем
-        return
-      }
+      if (e.name === 'AbortError') return
       setCourses([])
       setSelected([])
       setAllSelected(false)
@@ -225,15 +247,14 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
     } finally {
       setLoading(false)
     }
-  }, [page, statusFilter, orgFilter, orgId, t])
+  }, [page, statusFilter, orgFilter, fixedOrgId, isFixedOrgProp, isWaitingForOrg, t])
 
   /**
-   * Подсчёт total выносим отдельно и реже:
-   * - считаем при изменении фильтров/поиска/языка/orgId
-   * - используем быстрый подсчёт: head + count:'estimated'
-   * Это сильно дешевле, чем 'exact' на каждый лист.
+   * Подсчёт total
    */
   const fetchTotal = useCallback(async (appliedSearch) => {
+    if (isFixedOrgProp && isWaitingForOrg) return
+
     try {
       let studentIds = []
       if (appliedSearch && appliedSearch.length >= 3) {
@@ -255,61 +276,64 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
 
       let totalQuery = supabase
         .from('courses')
-        // head:true — вернёт только заголовки, без данных
-        // count:'estimated' — быстро, без тяжелых точных подсчётов
         .select('id', { count: 'estimated', head: true })
 
-      if (statusFilter !== 'all') {
-        totalQuery = totalQuery.eq('state', statusFilter)
-      }
+      if (statusFilter !== 'all') totalQuery = totalQuery.eq('state', statusFilter)
 
-      if (typeof orgId === 'number') {
-        totalQuery = totalQuery.eq('org_id', orgId)
+      if (isFixedOrgProp) {
+        totalQuery = totalQuery.eq('org_id', fixedOrgId)
       } else if (orgFilter !== 'all') {
         totalQuery = totalQuery.eq('org_id', orgFilter)
       }
 
-      if (studentIds.length > 0) {
-        totalQuery = totalQuery.in('student_id', studentIds)
-      }
+      if (studentIds.length > 0) totalQuery = totalQuery.in('student_id', studentIds)
 
       const { count, error } = await totalQuery
       if (error) throw error
       setTotal(count || 0)
-    } catch (e) {
-      // При ошибке не роняем UI, просто покажем 0
+    } catch {
       setTotal(0)
     }
-  }, [statusFilter, orgFilter, orgId])
+  }, [statusFilter, orgFilter, fixedOrgId, isFixedOrgProp, isWaitingForOrg])
 
   /**
-   * Первый рендер: загрузим данные и total
+   * Первая загрузка
+   * - свободный режим: сразу грузим
+   * - фиксированный режим: ждём валидный fixedOrgId
    */
   useEffect(() => {
-    if (isFirstLoad.current) {
+    if (!isFirstLoad.current) return
+
+    if (isFixedOrgProp) {
+      if (!isWaitingForOrg) {
+        isFirstLoad.current = false
+        fetchTotal('')
+        fetchPage('')
+      }
+    } else {
       isFirstLoad.current = false
       fetchTotal('')
       fetchPage('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isFixedOrgProp, isWaitingForOrg])
 
   /**
-   * Перезагрузка данных при изменении страницы/фильтров/поиска/языка/orgId
-   * - fetchPage вызывается чаще (включая переключение страниц)
+   * Перезагрузка данных при изменении условий
    */
   useEffect(() => {
+    if (isFixedOrgProp && isWaitingForOrg) return
     fetchPage(lastSearch)
-  }, [page, statusFilter, orgFilter, lastSearch, lang, orgId, fetchPage])
+  }, [page, statusFilter, orgFilter, lastSearch, lang, fixedOrgId, isFixedOrgProp, isWaitingForOrg, fetchPage])
 
   /**
-   * Пересчёт total только при изменении фильтров/поиска/языка/orgId (без page)
+   * Пересчёт total при изменениях (без page)
    */
   useEffect(() => {
-    // при изменении условий выдачи сбрасываем страницу на 1
+    if (isFixedOrgProp && isWaitingForOrg) return
     setPage(1)
     fetchTotal(lastSearch)
-  }, [statusFilter, orgFilter, lastSearch, lang, orgId, fetchTotal])
+  }, [statusFilter, orgFilter, lastSearch, lang, fixedOrgId, isFixedOrgProp, isWaitingForOrg, fetchTotal])
 
   /**
    * Обработчики UI
@@ -327,10 +351,8 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   }
 
   function handleSearchKeyDown (e) {
-    // По Enter применяем мгновенно вне зависимости от длины
     if (e.key === 'Enter') {
       setLastSearch(e.currentTarget.value)
-      // на всякий случай синхронизируем и setSearch (если у пользователя триггер из автозамены)
       setSearch(e.currentTarget.value)
     }
   }
@@ -376,7 +398,6 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
       setShowDeleteConfirm(true)
     } else if (action === 'changeStatus' && newStatus) {
       await supabase.from('courses').update({ state: newStatus }).in('id', selected)
-      // после массового изменения — перегружаем текущую страницу и total
       fetchPage(lastSearch)
       fetchTotal(lastSearch)
     }
@@ -387,7 +408,6 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
     await supabase.from('courses').delete().in('id', selected)
     setShowDeleteConfirm(false)
     setPendingDelete(false)
-    // после удаления — перегружаем текущую страницу и total
     fetchPage(lastSearch)
     fetchTotal(lastSearch)
   }
@@ -404,16 +424,18 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
     let plural = ''
     if (lang === 'en') plural = count > 1 ? 's' : ''
     else plural = count > 1 ? 'ов' : ''
-    return t.common.deleteConfirmText
+    return (t.common?.deleteConfirmText || '{count} запись{plural} будет удалена безвозвратно')
       .replace('{count}', count)
       .replace('{plural}', plural)
   }
+
+  const showOrgSelect = !isFixedOrgProp
 
   return (
     <div>
       {/* Панель фильтров и действий */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
-        {/* Фильтр по статусу */}
+        {/* Фильтр по статусу — подписи строго из t.courses.courseStates */}
         <div className="filter">
           {COURSE_STATES.map((st, i) => (
             <input
@@ -421,7 +443,7 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
               className={`btn${i === 0 ? ' filter-reset' : ''}${statusFilter === st ? ' btn-primary' : ''}`}
               type="radio"
               name="courseState"
-              aria-label={t.courseStates?.[st] || st}
+              aria-label={dictCourseStates?.[st] || st}
               value={st}
               checked={statusFilter === st}
               onChange={handleStatusRadio}
@@ -429,8 +451,8 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
           ))}
         </div>
 
-        {/* Фильтр по организации (если orgId не фиксирован пропсами) */}
-        {typeof orgId !== 'number' && (
+        {/* Фильтр по организации (только в свободном режиме) */}
+        {showOrgSelect && (
           <select
             className="select select-bordered"
             value={orgFilter}
@@ -445,15 +467,13 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
           </select>
         )}
 
-        {/* Поиск с иконкой.
-            - По Enter применяем немедленно
-            - Дебаунс 400мс применит автоматически (для >=3 символов) */}
+        {/* Поиск */}
         <label className="input input-bordered flex items-center gap-2">
           <MagnifyingGlassIcon className="h-5 w-5 opacity-60" />
           <input
             type="search"
             className="grow"
-            placeholder={t.common.search}
+            placeholder={t.common?.search || 'Поиск'}
             value={search}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
@@ -465,14 +485,14 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
         {showActions && (
           <details className="dropdown">
             <summary className="btn btn-secondary">
-              {t.common.actionsWithSelected} <ChevronDownIcon className="w-5 ml-1" />
+              {(t.common?.actionsWithSelected || 'Действия с выбранными')} <ChevronDownIcon className="w-5 ml-1" />
             </summary>
             <ul className="menu dropdown-content bg-base-200 rounded-lg z-1 w-full p-2 shadow-sm mt-px ring-1 ring-secondary/30">
-              <li className="menu-title uppercase">{t.common.assign_state}</li>
+              <li className="menu-title uppercase">{t.common?.assign_state || 'Назначить статус'}</li>
               {COURSE_STATUS_ACTIONS.map(st => (
                 <li key={st}>
                   <button onClick={() => handleAction('changeStatus', st)}>
-                    {t.courseStates?.[st] || st}
+                    {dictCourseStates?.[st] || st}
                   </button>
                 </li>
               ))}
@@ -483,7 +503,7 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
                   className="text-error"
                 >
                   <TrashIcon className="w-5 mr-1" />
-                  {t.common.deleteSelected}
+                  {t.common?.deleteSelected || 'Удалить выбранные'}
                 </button>
               </li>
             </ul>
@@ -491,78 +511,92 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
         )}
       </div>
 
+      {/* Ожидание orgId в фиксированном режиме: аккуратный прелоадер */}
+      {isWaitingForOrg && (
+        <div className="flex items-center justify-center py-16">
+          <span className="loading loading-spinner loading-lg" />
+        </div>
+      )}
+
       {/* Таблица */}
-      <div className="overflow-x-auto">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>
-                <input
-                  type="checkbox"
-                  className="checkbox"
-                  checked={allSelected}
-                  onChange={handleSelectAll}
-                />
-              </th>
-              <th>{t.courses_list || t.courses?.courses_list || t.courses?.all}</th>
-              <th>{t.common.fullName} & E-mail</th>
-              <th>{t.common.contacts} / {t.common.organization}</th>
-              <th>{t.common.status}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
+      {!isWaitingForOrg && (
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
               <tr>
-                <td colSpan={5}>
-                  <span className="loading loading-spinner loading-md">{t.common.loading}</span>
-                </td>
-              </tr>
-            )}
-            {!loading && courses.length === 0 && (
-              <tr>
-                <td colSpan={5}>{errorText || t.common.noData}</td>
-              </tr>
-            )}
-            {!loading && courses.map(row => (
-              <tr
-                key={row.id}
-                className={selected.includes(row.id) ? 'bg-base-200' : ''}
-                onClick={() => handleSelect(row.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <td>
+                <th>
                   <input
                     type="checkbox"
                     className="checkbox"
-                    checked={selected.includes(row.id)}
-                    onChange={() => handleSelect(row.id)}
-                    onClick={e => e.stopPropagation()}
+                    checked={allSelected}
+                    onChange={handleSelectAll}
                   />
-                </td>
-                <td>
-                  <div>{getCourseTitle(row.course_id)}</div>
-                </td>
-                <td>
-                  <div>{getProfileField(row, 'full_name')}</div>
-                  <div className="text-sm opacity-50">{getProfileField(row, 'email')}</div>
-                </td>
-                <td>
-                  <div>{getProfileField(row, 'phone')}</div>
-                  <span className="badge badge-ghost badge-sm">
-                    {getOrgName(row.org_id)}
-                  </span>
-                </td>
-                <td>
-                  <span className="badge badge-outline">{t.common.courseStates?.[row.state] || row.state}</span>
-                </td>
+                </th>
+                <th>{t.courses?.courses_list || t.courses?.all || 'Курсы'}</th>
+                <th>{(t.common?.fullName || 'ФИО')} & E-mail</th>
+                <th>{(t.common?.contacts || 'Контакты')} / {(t.common?.organization || 'Организация')}</th>
+                <th>{t.common?.status || 'Статус'}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="flex items-center gap-3 py-6">
+                      <span className="loading loading-spinner loading-md" />
+                      <span>{t.common?.loading || 'Загрузка...'}</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!loading && courses.length === 0 && (
+                <tr>
+                  <td colSpan={5}>{errorText || t.common?.noData || 'Нет данных'}</td>
+                </tr>
+              )}
+              {!loading && courses.map(row => (
+                <tr
+                  key={row.id}
+                  className={selected.includes(row.id) ? 'bg-base-200' : ''}
+                  onClick={() => handleSelect(row.id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="checkbox"
+                      checked={selected.includes(row.id)}
+                      onChange={() => handleSelect(row.id)}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </td>
+                  <td>
+                    <div>{getCourseTitle(row.course_id)}</div>
+                  </td>
+                  <td>
+                    <div>{getProfileField(row, 'full_name')}</div>
+                    <div className="text-sm opacity-50">{getProfileField(row, 'email')}</div>
+                  </td>
+                  <td>
+                    <div>{getProfileField(row, 'phone')}</div>
+                    <span className="badge badge-ghost badge-sm">
+                      {getOrgName(row.org_id)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="badge badge-outline">
+                      {dictCourseStates?.[row.state] || row.state}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Пагинация: без изменений в UI */}
-      {total > PAGE_SIZE && (
+      {/* Пагинация */}
+      {!isWaitingForOrg && total > PAGE_SIZE && (
         <div className="join justify-center flex mt-6">
           {Array.from({ length: Math.ceil(total / PAGE_SIZE) }, (_, i) => i + 1)
             .filter(i =>
@@ -588,7 +622,7 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
           <div className="bg-base-100 p-8 rounded-lg max-w-md w-full shadow-lg flex flex-col items-center">
             <h2 className="text-lg font-semibold mb-4">
-              {t.common.deleteConfirmTitle}
+              {t.common?.deleteConfirmTitle || 'Удалить записи?'}
             </h2>
             <p className="mb-6 text-center">
               {getDeleteConfirmText()}
@@ -601,14 +635,14 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
               >
                 {pendingDelete
                   ? (lang === 'en' ? 'Deleting...' : 'Удаление...')
-                  : t.common.delete}
+                  : (t.common?.delete || 'Удалить')}
               </button>
               <button
                 className="btn"
                 disabled={pendingDelete}
                 onClick={cancelDelete}
               >
-                {t.common.cancel}
+                {t.common?.cancel || 'Отмена'}
               </button>
             </div>
           </div>

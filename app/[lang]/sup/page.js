@@ -20,9 +20,10 @@ export default function SupPage({ params }) {
 
   // Ключ для localStorage (делай уникальным для каждого таб-группы)
   const STORAGE_KEY = 'sup_active_tab'
+  const orgEnv = process.env.NEXT_PUBLIC_ORG
   // Активный таб: 0 — пользователи, 1 — курсы
   const [activeTab, setActiveTab] = useState(0)
-  const [orgId, setOrgId] = useState(null)
+  const [orgId, setOrgId] = useState(orgEnv || null)
 
   // При первом рендере читаем localStorage (восстанавливаем активный таб)
   useEffect(() => {
@@ -51,9 +52,9 @@ export default function SupPage({ params }) {
         console.warn('[WARN] userId not found')
         return
       }
-      loadOrgId(userId).then((id) => {
-        setOrgId(id)
-      })
+      // loadOrgId(userId).then((id) => {
+      //   setOrgId(id)
+      // })
     })
   }, [])
 
