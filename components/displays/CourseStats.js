@@ -152,8 +152,12 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
     {
       IsInside
       ? <div className="flex flex-col gap-2 items-center">
-          <div className="avatar">
-            <div className="mask mask-squircle w-36 h-36">
+          <div className="avatar relative h-36 w-36">
+            <div className="radial-progress absolute -left-[3px] -top-[3px] text-info"
+              style={{ "--value": "70", "--size": "9.4rem", "--thickness": "3px" } /* as React.CSSProperties */ } 
+              aria-valuenow={70} role="progressbar">
+            </div>
+            <div className="mask mask-circle w-36 h-36 absolute">
               <img src={imgSrc} alt={courseTitle} />
             </div>
           </div>
