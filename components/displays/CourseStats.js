@@ -154,7 +154,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
       ? <div className="flex flex-col gap-2 items-center">
           <div className="avatar relative h-36 w-36">
             <div className="radial-progress absolute -left-[3px] -top-[3px] text-info"
-              style={{ "--value": "70", "--size": "9.4rem", "--thickness": "3px" } /* as React.CSSProperties */ } 
+              style={{ "--value": percentLessonsDone, "--size": "9.4rem", "--thickness": "3px" } /* as React.CSSProperties */ } 
               aria-valuenow={70} role="progressbar">
             </div>
             <div className="mask mask-circle w-36 h-36 absolute">
