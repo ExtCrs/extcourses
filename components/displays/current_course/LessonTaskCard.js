@@ -131,7 +131,7 @@ export default function LessonTaskCard({
             : 'max-w-2xl font-semibold'
         }>
           {task.type === 'read' && <div className="w-16 mr-6"><BookOpenIcon className="w-12" /></div>}
-          {task.question}
+          <span className={task.type === 'read' ? '' : 'text-secondary font-black'}>{task.question}</span>
         </div>
       </div>
 
