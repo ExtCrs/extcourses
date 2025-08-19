@@ -146,7 +146,7 @@ export default function CurrentCoursePage({ params }) {
     <div className="drawer lg:drawer-open">
       <input id="courseDrawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content lg:p-4 p-px">
-        <label htmlFor="courseDrawer" className="btn btn-ghost drawer-button lg:hidden">
+        <label htmlFor="courseDrawer" className="btn btn-link drawer-button lg:hidden">
           <Bars3Icon className="w-7" />
         </label>
         <div className="lg:hidden block">

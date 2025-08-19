@@ -5,7 +5,7 @@ export default function LessonMenu({ totalLessons, activeLesson, setActiveLesson
       {Array.from({ length: totalLessons }, (_, i) => i + 1).map((num) => (
         <li key={num} className="max-w-16 w-full font-mono">
           <button
-            className={num === activeLesson ? "menu-active !bg-accent rounded-full border border-accent font-bold shadow-lg" : "!w-full rounded-none border-transparent"}
+            className={num === activeLesson ? "menu-active !bg-accent rounded-full border border-accent font-bold shadow-lg" : "!w-full rounded-full border-transparent"}
             onClick={() => setActiveLesson(num)}
           >
             <span className="min-w-5">{num}</span>

@@ -77,8 +77,8 @@ export default function CoursesPage({ params }) {
     <div className="p-8">
       <Breadcrumbs />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-10">
-        <div>
+      <div className="flex flex-wrap justify-between gap-4">
+        <div className="max-w-96">
           <h1 className="text-2xl font-bold mb-4">{t.seo.courses.title}</h1>
           <p className="mb-4 text-gray-500">{t.seo.courses.description}</p>
 
@@ -105,18 +105,16 @@ export default function CoursesPage({ params }) {
             ))}
           </div>
         </div>
-        <div>
-          {/* name of each tab group should be unique */}
-          <div className="tabs tabs-border justify-center">
-            <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.current_course} defaultChecked />
-            <div className="tab-content">
-              <CourseStats lang={lang} />
-            </div>
-
-            <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.completed_courses} />
-            <div className="tab-content">Список завершенных курсов</div>
+        <CourseStats lang={lang} />
+        {/* name of each tab group should be unique */}
+        {/* <div className="tabs tabs-border justify-center">
+          <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.current_course} defaultChecked />
+          <div className="tab-content overflow-x-scroll p-[2px] pt-px">
+            <CourseStats lang={lang} />
           </div>
-        </div>
+          <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.completed_courses} />
+          <div className="tab-content">Список завершенных курсов</div>
+        </div> */}
       </div>
 
       {/* Текущая категория */}

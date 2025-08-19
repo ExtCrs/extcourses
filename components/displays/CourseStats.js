@@ -179,7 +179,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
           </div>
         </div>
       :
-        <div className="stats ring-1 ring-primary/30 stats-vertical md:stats-horizontal w-fit sm:w-full">
+        <div className="stats ring-1 ring-primary/30 stats-vertical md:stats-horizontal grow lg:grow-0">
           <div className="stat">
             <div className="stat-figure text-secondary">
               <div className="avatar avatar-online">
@@ -189,8 +189,8 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
               </div>
             </div>
             <div className="stat-title">{t.courses.lesson}</div>
-            <div className="stat-value justify-center flex animate-bounce">{currentLessonNo}</div>
-            <div className="stat-actions">
+            <div className="stat-actions flex flex-col">
+              <div className="stat-value justify-center flex animate-bounce pt-2">{currentLessonNo}</div>
               <Link 
                 className="btn btn-xs btn-primary"
                 href={`/${lang}/courses/current`}
