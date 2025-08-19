@@ -102,10 +102,11 @@ export default function LessonTaskCard({
   }
 
   return (
-    <div key={task.id} className="card bg-base-100 mt-4 max-w-3xl">
-      <div className="flex gap-4 items-center indicator w-full pt-4">
+    <div key={task.id} className="card bg-base-100 max-w-3xl rounded-none">
+
+      <div className={`pl-0 shadow-none indicator w-full pt-4${task.type !== 'read' ? " alert rounded-l-none": ""}`}>
         {task.type !== 'read' && (
-          <span className={`indicator-item indicator-center badge badge-lg shadow badge-soft ${
+          <span className={`indicator-item indicator-center badge shadow badge-soft ${
             status === 'accepted' ? 'badge-warning'
             : status === 'done' ? 'badge-success'
             : status === 'rejected' ? 'badge-error animate-bounce'
@@ -118,7 +119,7 @@ export default function LessonTaskCard({
         {task.type !== 'read' && (
           <div className="avatar avatar-placeholder ml-4">
             <div className={`${getStatusColorClass(status)} w-10 rounded-full`}>
-              <span className="text-xm">{task.num}</span>
+              <span className="text-xm font-bold">{task.num}</span>
             </div>
           </div>
         )}
@@ -131,14 +132,14 @@ export default function LessonTaskCard({
             : 'max-w-2xl font-semibold'
         }>
           {task.type === 'read' && <div className="w-16 mr-6"><BookOpenIcon className="w-12" /></div>}
-          <span className={task.type === 'read' ? '' : 'text-secondary font-black'}>{task.question}</span>
+          <span className={task.type === 'read' ? '' : 'text-secondary font-bold'}>{task.question}</span>
         </div>
       </div>
 
       <div className="max-w-3xl mt-2 ml-4">
         {/* WRITE */}
         {task.type === 'write' && (
-          <fieldset className="fieldset max-w-2xl ml-14">
+          <fieldset className="fieldset max-w-2xl ml-14 mr-2">
             {!isSup && !isAccepted && canEdit ? (
               <>
                 <SimpleEditor
@@ -159,7 +160,7 @@ export default function LessonTaskCard({
                 />
               </>
             ) : (
-              <div className="prose-lg mt-2 mb-2 min-h-16 border-l-2 pl-4 border-secondary/30" dangerouslySetInnerHTML={{
+              <div className="prose-lg -mt-3 py-2 pr-2 mb-2 min-h-16 border-l-2 pl-4 border-secondary/30 -ml-9" dangerouslySetInnerHTML={{
                 __html: ansObj?.answer || `<span class='text-gray-400'>${lang === 'ru' ? 'Нет ответа' : 'No answer yet'}</span>`
               }} />
             )}
