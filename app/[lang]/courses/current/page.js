@@ -179,8 +179,8 @@ export default function CurrentCoursePage({ params }) {
       </div>
       <div className="drawer-side">
         <label htmlFor="courseDrawer" aria-label="close sidebar" className="drawer-overlay" />
-        <div className="menu bg-base-200 lg:bg-transparent text-base-content min-h-full w-80 p-4">
-          <div className="rounded-lg shadow border border-secondary/30 p-4 bg-base-100/50">
+        <div className="menu lg:bg-transparent text-base-content min-h-full w-80 p-4">
+          <div className="rounded-2xl bg-base-200 ring ring-secondary/30 p-4">
             <h1 className="text-center text-xl uppercase font-bold text-secondary mb-2">{title}</h1>
             <CourseStats IsInside={true} />
             <div className="text-sm text-center mt-2 uppercase text-secondary/60 font-medium">{t.courses.lessons_list}</div>

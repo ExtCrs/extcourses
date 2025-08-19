@@ -188,7 +188,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
                 </div>
               </div>
             </div>
-            <div className="stat-title">{t.courses.lesson}</div>
+            <div className="stat-title text-center">{t.courses.lesson}</div>
             <div className="stat-actions flex flex-col">
               <div className="stat-value justify-center flex animate-bounce pt-2">{currentLessonNo}</div>
               <Link 
@@ -199,14 +199,14 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
               </Link>
             </div>
           </div>
-          <div className="stat">
+          <div className="stat text-center md:text-left">
             <div className="stat-title">{t.courses.progress}</div>
             <div className="stat-value">{percentLessonsDone}%</div>
             <div className="stat-desc font-bold">
               {remainingTasks} <span className="font-normal">{t.courses.tasks_remaining}</span>
             </div>
           </div>
-          <div className="stat">
+          <div className="stat text-center md:text-left">
             <div className="stat-title">{t.courses.days_from_start}</div>
             <div className="stat-value">{daysFromStart}</div>
             <div className="stat-desc">

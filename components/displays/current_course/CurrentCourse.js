@@ -446,7 +446,7 @@ const handleReviewLesson = async (finalStatus) => {
               in_progress: 'alert-neutral alert-outline',
             }[lessonStatus]
           }`}>
-            <div>
+            <div className="text-center">
               {lessonStatus && t?.courses.lessonStatusTexts?.[lessonStatus] && (
                 <>{t.courses.lessonStatusTexts[lessonStatus]}</>
               )}

@@ -83,9 +83,9 @@ export async function saveLesson({ course_ref_id, profile_id, org_id, course_no,
 
 export function getBadge(lessonNum, lessonsMap) {
   const status = lessonsMap[lessonNum] || null;
-  if (!status) return null;
+  if (!status) return <span className={`badge badge-xs badge-ghost`} />;
   const badgeClass = STATUS_BADGES[status] || 'badge-ghost';
-  return <span className={`badge badge-xs ml-2 ${badgeClass}`}></span>;
+  return <span className={`badge badge-xs ${badgeClass}`} />;
 }
 
 export function getAvatarClass(role) {
