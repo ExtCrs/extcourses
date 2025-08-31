@@ -45,7 +45,13 @@
     "new_students": "Новые студенты",
     "all_students": "Все студенты",
     "assign_state": "Назначить статус",
-    "recover_pass": "Восстановить пароль"
+    "reset_password": "Сбросить пароль",
+    "reset_password_modal_title": "Сброс пароля пользователя",
+    "reset_password_modal_description": "Введите новый пароль для выбранного пользователя",
+    "new_password": "Новый пароль",
+    "password_reset_success": "Пароль успешно обновлен",
+    "password_reset_error": "Ошибка при обновлении пароля",
+    "select_single_user": "Выберите одного пользователя для сброса пароля"
   },
   "breadcrumbs": {
     "home": "Главная",
@@ -174,26 +180,7 @@
     "registration_success": "Регистрация прошла успешно",
     "fill_all_fields": "Пожалуйста, заполните все поля",
     "password_mismatch": "Пароли не совпадают",
-    "login_success": "Вход выполнен успешно",
-    "password_recovery_title": "Восстановление пароля",
-    "password_recovery_description": "Введите адрес электронной почты, и мы отправим вам ссылку для сброса пароля.",
-    "enter_recovery_email": "Введите адрес электронной почты",
-    "send_recovery_email": "Отправить письмо",
-    "recovery_email_required": "Пожалуйста, введите адрес электронной почты",
-    "email_not_found": "Указанная вами почта в системе отсутствует",
-    "recovery_email_sent": "Письмо отправлено",
-    "recovery_email_sent_description": "Проверьте почту на наличие ссылки для сброса пароля. Письмо может прийти в течение нескольких минут.",
-    "back_to_login": "Вернуться к входу",
-    "reset_password_title": "Сброс пароля",
-    "new_password": "Новый пароль",
-    "confirm_new_password": "Подтвердите новый пароль",
-    "update_password": "Обновить пароль",
-    "password_too_short": "Пароль должен содержать не менее 6 символов",
-    "invalid_reset_link": "Недействительная или просроченная ссылка сброса",
-    "invalid_reset_link_description": "Ссылка для сброса пароля недействительна или просрочена. Пожалуйста, запросите новую.",
-    "password_reset_success": "Пароль успешно обновлен",
-    "password_reset_success_description": "Ваш пароль был обновлен. Вы будете перенаправлены к курсам в ближайшее время.",
-    "go_to_courses": "Перейти к курсам"
+    "login_success": "Вход выполнен успешно"
   },
   "seo": {
     "home": {

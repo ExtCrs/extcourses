@@ -113,6 +113,12 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(false)
 
+  // --- Модалка сброса пароля
+  const [showPasswordReset, setShowPasswordReset] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [pendingPasswordReset, setPendingPasswordReset] = useState(false)
+  const [passwordResetUserId, setPasswordResetUserId] = useState(null)
+
   // --- Служебное
   const isFirstLoad = useRef(true)
   const abortRef = useRef(null)
@@ -396,6 +402,16 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   async function handleAction (action, newStatus = null) {
     if (action === 'delete') {
       setShowDeleteConfirm(true)
+    } else if (action === 'resetPassword') {
+      if (selected.length !== 1) {
+        alert(t.common?.select_single_user || 'Выберите одного пользователя для сброса пароля')
+        return
+      }
+      const selectedCourse = courses.find(c => c.id === selected[0])
+      if (selectedCourse?.student_id) {
+        setPasswordResetUserId(selectedCourse.student_id)
+        setShowPasswordReset(true)
+      }
     } else if (action === 'changeStatus' && newStatus) {
       await supabase.from('courses').update({ state: newStatus }).in('id', selected)
       fetchPage(lastSearch)
@@ -415,6 +431,50 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
   function cancelDelete () {
     setShowDeleteConfirm(false)
     setPendingDelete(false)
+  }
+
+  async function handlePasswordReset () {
+    if (!newPassword || newPassword.length < 6) {
+      alert(lang === 'en' ? 'Password must be at least 6 characters long' : 'Пароль должен содержать не менее 6 символов')
+      return
+    }
+
+    setPendingPasswordReset(true)
+    try {
+      // Используем API route для сброса пароля
+      const response = await fetch('/api/reset-user-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: passwordResetUserId,
+          newPassword: newPassword
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to reset password')
+      }
+
+      alert(t.common?.password_reset_success || 'Пароль успешно обновлен')
+      setShowPasswordReset(false)
+      setNewPassword('')
+      setPasswordResetUserId(null)
+    } catch (error) {
+      alert(t.common?.password_reset_error || 'Ошибка при обновлении пароля')
+    } finally {
+      setPendingPasswordReset(false)
+    }
+  }
+
+  function cancelPasswordReset () {
+    setShowPasswordReset(false)
+    setNewPassword('')
+    setPasswordResetUserId(null)
+    setPendingPasswordReset(false)
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -497,6 +557,14 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
                 </li>
               ))}
               <li className="menu-divider"></li>
+              <li>
+                <button
+                  onClick={() => handleAction('resetPassword')}
+                  className="text-info"
+                >
+                  {t.common?.reset_password || 'Сбросить пароль'}
+                </button>
+              </li>
               <li>
                 <button
                   onClick={() => handleAction('delete')}
@@ -643,6 +711,49 @@ export default function CoursesTable ({ lang = 'ru', orgId = undefined }) {
                 onClick={cancelDelete}
               >
                 {t.common?.cancel || 'Отмена'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка сброса пароля */}
+      {showPasswordReset && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
+          <div className="bg-base-100 p-8 rounded-lg max-w-md w-full shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">
+              {t.common?.reset_password_modal_title || 'Сброс пароля пользователя'}
+            </h2>
+            <p className="mb-4 text-sm text-base-content/70">
+              {t.common?.reset_password_modal_description || 'Введите новый пароль для выбранного пользователя'}
+            </p>
+            <label className="label">
+              <span className="label-text">{t.common?.new_password || 'Новый пароль'}</span>
+            </label>
+            <input
+              type="password"
+              className="input input-bordered w-full mb-6"
+              placeholder={t.common?.new_password || 'Новый пароль'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={6}
+            />
+            <div className="flex gap-4 justify-end">
+              <button
+                className="btn"
+                disabled={pendingPasswordReset}
+                onClick={cancelPasswordReset}
+              >
+                {t.common?.cancel || 'Отмена'}
+              </button>
+              <button
+                className="btn btn-primary"
+                disabled={pendingPasswordReset || !newPassword || newPassword.length < 6}
+                onClick={handlePasswordReset}
+              >
+                {pendingPasswordReset
+                  ? (lang === 'en' ? 'Updating...' : 'Обновление...')
+                  : (t.common?.save || 'Сохранить')}
               </button>
             </div>
           </div>

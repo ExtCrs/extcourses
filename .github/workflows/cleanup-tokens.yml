@@ -1,0 +1,33 @@
+# GitHub Actions workflow for cleaning up expired password reset tokens
+# Runs daily at 2 AM UTC
+
+name: Cleanup Expired Password Reset Tokens
+
+on:
+  schedule:
+    # Run daily at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Cleanup expired tokens
+        run: |
+          curl -X POST '${{ secrets.SUPABASE_URL }}/functions/v1/cleanup-tokens' \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+# To set up this workflow:
+# 1. Go to your GitHub repository
+# 2. Navigate to Settings > Secrets and variables > Actions
+# 3. Add the following secrets:
+#    - SUPABASE_URL: Your Supabase project URL
+#    - SUPABASE_ANON_KEY: Your Supabase anon key
+# 4. The workflow will run automatically daily at 2 AM UTC
+# 5. You can also trigger it manually from the Actions tab
