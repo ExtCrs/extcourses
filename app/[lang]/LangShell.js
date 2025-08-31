@@ -3,7 +3,7 @@
 // Вся клиентская логика и UI: supabase-авторизация, тема, меню, логотипы, переключатели, футер.
 // НИКАКИХ <html>/<head>/<body> — это делает корневой app/layout.js.
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import LanguageSwitcher from '@/components/switchers/LanguageSwitcher'
@@ -174,7 +174,9 @@ export default function LangShell({ children, lang = 'ru' }) {
         <div className="flex-none">
           <ul className="menu menu-sm menu-horizontal px-1 flex justify-center">
             <ThemeSwitcher />
-            <LanguageSwitcher currentLang={lang} />
+            <Suspense fallback={<div className="btn btn-xs btn-secondary btn-outline loading loading-xs"></div>}>
+              <LanguageSwitcher currentLang={lang} />
+            </Suspense>
           </ul>
         </div>
       </nav>
