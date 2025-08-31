@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { getTranslations } from '@/lib/i18n';
+import { useLesson } from '@/hooks/lessons';
 import LessonTaskCard from './LessonTaskCard';
 import LessonMenu from './LessonMenu';
 import {
   loadTasks,
-  loadLesson,
   loadLessonsMap,
   loadOrgId,
   saveLesson,
@@ -39,13 +39,19 @@ export default function CurrentCourse({
   const [orgId, setOrgId] = useState(currentCourse?.org_id || courseInfo?.org_id || null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lesson, setLesson] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [dirty, setDirty] = useState({});
   const [saving, setSaving] = useState({});
   const [lessonsMap, setLessonsMap] = useState({});
   const [chatEditor, setChatEditor] = useState({});
   const [chatInput, setChatInput] = useState({});
+
+  // Use the useLesson hook for safe lesson loading
+  const { lesson, isLoading: lessonLoading, error: lessonError, refresh: refreshLesson } = useLesson(
+    course_ref_id,
+    profile_id,
+    activeLesson
+  );
 
   useEffect(() => {
     if (!orgId && profile_id) {
@@ -81,15 +87,10 @@ export default function CurrentCourse({
     });
   }, [course_ref_id, profile_id, isSup]);
 
+  // Update answers when lesson data changes from SWR hook
   useEffect(() => {
-    setLesson(null);
-    setAnswers([]);
-    if (!course_ref_id || !profile_id || !activeLesson) return;
-    loadLesson(course_ref_id, profile_id, activeLesson).then(data => {
-      setLesson(data);
-      setAnswers(Array.isArray(data?.answers) ? data.answers : []);
-    });
-  }, [course_ref_id, profile_id, activeLesson]);
+    setAnswers(Array.isArray(lesson?.answers) ? lesson.answers : []);
+  }, [lesson]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -165,7 +166,9 @@ export default function CurrentCourse({
         answers: updatedAnswers,
       });
 
-      setLesson(saved);
+      // Refresh lesson data from SWR cache
+      await refreshLesson();
+      // Update local answers state with saved data
       setAnswers(Array.isArray(saved?.answers) ? saved.answers : []);
       setDirty((prev) => ({ ...prev, [taskId]: false }));
       loadLessonsMap(course_ref_id, profile_id).then(setLessonsMap);
@@ -205,7 +208,9 @@ export default function CurrentCourse({
         lesson_id: activeLesson,
         answers: newAnswers,
       });
-      setLesson(saved);
+      // Refresh lesson data from SWR cache
+      await refreshLesson();
+      // Update local answers state with saved data
       setAnswers(Array.isArray(saved?.answers) ? saved.answers : []);
     } catch (e) {
       alert('Ошибка при отметке прочитанного: ' + e.message);
@@ -255,7 +260,9 @@ export default function CurrentCourse({
         lesson_id: activeLesson,
         answers: newAnswers,
       });
-      setLesson(saved);
+      // Refresh lesson data from SWR cache
+      await refreshLesson();
+      // Update local answers state with saved data
       setAnswers(Array.isArray(saved?.answers) ? saved.answers : []);
       setDirty({});
       setChatEditor((prev) => ({ ...prev, [taskId]: false }));
@@ -280,7 +287,9 @@ export default function CurrentCourse({
         answers: updatedAnswers,
         status: statusToSet,
       });
-      setLesson(saved);
+      // Refresh lesson data from SWR cache
+      await refreshLesson();
+      // Update local answers state with saved data
       setAnswers(Array.isArray(saved?.answers) ? saved.answers : []);
       setDirty({});
       loadLessonsMap(course_ref_id, profile_id).then(setLessonsMap);
@@ -327,7 +336,9 @@ const handleReviewLesson = async (finalStatus) => {
         status: finalStatus,
       });
 
-      setLesson(saved);
+      // Refresh lesson data from SWR cache
+      await refreshLesson();
+      // Update local answers state with saved data
       setAnswers(Array.isArray(saved?.answers) ? saved.answers : []);
       setDirty({});
       loadLessonsMap(course_ref_id, profile_id).then(setLessonsMap);

@@ -44,7 +44,8 @@
     "tasks_to_check": "Tasks to check",
     "new_students": "New Students",
     "all_students": "All students",
-    "assign_state": "Assign state"
+    "assign_state": "Assign state",
+    "recover_pass": "Recover password"
   },
   "breadcrumbs": {
     "home": "Home",
@@ -173,7 +174,25 @@
     "registration_success": "Registration succeeded",
     "fill_all_fields": "Please fill in all fields",
     "password_mismatch": "Passwords do not match",
-    "login_success": "Login successful"
+    "login_success": "Login successful",
+    "password_recovery_title": "Password Recovery",
+    "password_recovery_description": "Enter your email address and we'll send you a link to reset your password.",
+    "enter_recovery_email": "Enter your email address",
+    "send_recovery_email": "Send Recovery Email",
+    "recovery_email_required": "Please enter your email address",
+    "recovery_email_sent": "Recovery Email Sent",
+    "recovery_email_sent_description": "Check your email for a password reset link. It may take a few minutes to arrive.",
+    "back_to_login": "Back to Login",
+    "reset_password_title": "Reset Password",
+    "new_password": "New Password",
+    "confirm_new_password": "Confirm New Password",
+    "update_password": "Update Password",
+    "password_too_short": "Password must be at least 6 characters long",
+    "invalid_reset_link": "Invalid or expired reset link",
+    "invalid_reset_link_description": "The password reset link is invalid or has expired. Please request a new one.",
+    "password_reset_success": "Password Updated Successfully",
+    "password_reset_success_description": "Your password has been updated. You will be redirected to your courses shortly.",
+    "go_to_courses": "Go to Courses"
   },
   "seo": {
     "home": {

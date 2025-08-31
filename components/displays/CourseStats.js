@@ -102,11 +102,11 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
 
   if (!course || !courseInfo) {
     return (
-      <div className="stats bg-base-300 ring-1 ring-primary/30 stats-vertical w-full">
+      <div className="stats bg-base-300 ring-1 ring-primary/30 stats-vertical w-fit">
         <div className="stat flex items-center">
-          <div className="avatar avatar-placeholder">
-            <div className="bg-secondary text-secondary-content w-16 rounded-full">
-              <span className="text-xl">🫵</span>
+          <div className="avatar avatar-placeholder animate-pulse">
+            <div className="w-16 rounded-full">
+              <span className="text-6xl">🌞</span>
             </div>
           </div>
           <div className="stat-desc text-lg text-base-content/60">
@@ -138,7 +138,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
       const answers = Array.isArray(lesson.answers) ? lesson.answers : []
       completedTasks += answers.filter(a => a.status === 'accepted' || a.status === 'done').length
     } catch(e) {
-      console.log(e);
+      console.error('Error processing lesson answers:', e);
     }
   })
 

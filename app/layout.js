@@ -1,5 +1,6 @@
 // app/layout.js
 import './globals.css'
+import { SWRProvider } from '@/hooks/common/SWRProvider'
 
 export const metadata = {
   title: 'ExtCourses',
@@ -12,7 +13,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className="max-w-7xl mx-auto min-h-screen flex flex-col">
-        {children}
+        <SWRProvider>
+          {children}
+        </SWRProvider>
       </body>
     </html>
   )

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { safeSingleQuery } from '@/hooks/common';
 
 // Все методы, которые нужны компонентам
 
@@ -26,14 +27,15 @@ export async function loadTasks(lang, courseInfoId) {
 }
 
 export async function loadLesson(course_ref_id, profile_id, lesson_id) {
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('*')
-    .eq('course_ref_id', course_ref_id)
-    .eq('profile_id', profile_id)
-    .eq('lesson_id', lesson_id)
-    .single();
-  if (error && error.code !== 'PGRST116') return null;
+  const { data, error } = await safeSingleQuery(
+    supabase
+      .from('lessons')
+      .select('*')
+      .eq('course_ref_id', course_ref_id)
+      .eq('profile_id', profile_id)
+      .eq('lesson_id', lesson_id)
+  );
+  if (error) return null;
   return data || null;
 }
 
@@ -52,11 +54,12 @@ export async function loadLessonsMap(course_ref_id, profile_id) {
 }
 
 export async function loadOrgId(profile_id) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('current_org_id')
-    .eq('id', profile_id)
-    .single();
+  const { data, error } = await safeSingleQuery(
+    supabase
+      .from('profiles')
+      .select('current_org_id')
+      .eq('id', profile_id)
+  );
   if (error) return null;
   return data?.current_org_id || null;
 }
@@ -72,11 +75,12 @@ export async function saveLesson({ course_ref_id, profile_id, org_id, course_no,
     updated_at: new Date().toISOString(),
   };
   if (status) upsertObj.status = status;
-  const { data, error } = await supabase
-    .from('lessons')
-    .upsert([upsertObj], { onConflict: ['course_ref_id', 'profile_id', 'lesson_id'] })
-    .select()
-    .single();
+  const { data, error } = await safeSingleQuery(
+    supabase
+      .from('lessons')
+      .upsert([upsertObj], { onConflict: ['course_ref_id', 'profile_id', 'lesson_id'] })
+      .select()
+  );
   if (error) throw error;
   return data;
 }

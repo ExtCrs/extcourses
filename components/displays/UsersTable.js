@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase/client'
 import { getTranslations } from '@/lib/i18n'
-import coursesList from '@/data/courses.json'
+import { useUsers, useOrganizationsMap, useUserCoursesMap } from '@/hooks/users'
+import { useCoursesMetadata } from '@/hooks/courses'
 import dynamic from 'next/dynamic'
 import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 
@@ -15,222 +15,120 @@ const ROLE_DATA = {
   admin:      { short: 'Adm', color: 'bg-accent text-accent-content' },
 }
 
-async function getOrgMap() {
-  const { data } = await supabase.from('orgs').select('id, name_ru, name_en')
-  const map = {}
-  ;(data || []).forEach(org => { map[org.id] = org })
-  return map
-}
-
-function getCoursesMapFromFile(lang) {
-  const map = {}
-  coursesList.forEach(course => {
-    if (!course.id) return
-    const courseId = course.id.toString().trim()
-    let title = lang === 'en'
-      ? (typeof course.title_en === 'string' ? course.title_en.trim() : '')
-      : (typeof course.title_ru === 'string' ? course.title_ru.trim() : '')
-    if (!title) {
-      title = lang === 'en'
-        ? (typeof course.title_ru === 'string' ? course.title_ru.trim() : '')
-        : (typeof course.title_en === 'string' ? course.title_en.trim() : '')
-    }
-    map[courseId] = title || courseId
-  })
-  return map
-}
-
 export default function UsersTable({ lang = "ru" }) {
   const { t } = getTranslations(lang, 'common')
 
-  const [users, setUsers] = useState([])
-  const [orgs, setOrgs] = useState({})
-  const [coursesMap, setCoursesMap] = useState({})
-  const [userCourseMap, setUserCourseMap] = useState({})
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [errorText, setErrorText] = useState('')
+  // Get course metadata
+  const { coursesMap } = useCoursesMetadata(lang)
 
-  const [roleFilter, setRoleFilter] = useState('all')
-  const [search, setSearch] = useState('')
-  const [lastSearch, setLastSearch] = useState('')
+  // Get organizations map
+  const { orgMap } = useOrganizationsMap()
 
-  const [selected, setSelected] = useState([])
-  const [allSelected, setAllSelected] = useState(false)
-  const [showActions, setShowActions] = useState(false)
+  // Use the SWR users hook
+  const {
+    users,
+    totalUsers,
+    isLoading,
+    error: errorText,
+    canManageUsers,
+    pagination,
+    search,
+    filters,
+    selection,
+    updateUserRole,
+    toggleUserStatus,
+    deleteUser,
+    bulkUpdateRole,
+    bulkToggleStatus,
+    bulkDelete,
+    refresh
+  } = useUsers({
+    initialFilters: { role: 'all' }
+  })
 
+  // Get user courses map for current users
+  const userIds = users.map(u => u.id)
+  const { courseMap } = useUserCoursesMap(userIds)
+
+  // Modal state
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editUser, setEditUser] = useState(null)
 
-  const isFirstLoad = useRef(true)
+  // Show actions state
+  const [showActions, setShowActions] = useState(false)
 
+  // Update show actions when selection changes
   useEffect(() => {
-    setCoursesMap(getCoursesMapFromFile(lang))
-  }, [lang])
+    setShowActions(selection.hasSelection)
+  }, [selection.hasSelection])
 
-  useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false
-      fetchAll('')
-      return
-    }
-    fetchAll(lastSearch)
-    // eslint-disable-next-line
-  }, [page, roleFilter, lastSearch, lang])
-
-  async function fetchAll(appliedSearch = '') {
-    setLoading(true)
-    setErrorText('')
-
-    getOrgMap().then(setOrgs)
-
-    let query = supabase.from('profiles').select(
-      'id, email, full_name, phone, current_org_id, role, active',
-      { count: 'exact' }
-    )
-
-    if (roleFilter !== 'all') {
-      query = query.eq('role', roleFilter)
-    }
-
-    if (appliedSearch.length >= 3) {
-      query = query.or(
-        `full_name.ilike.%${appliedSearch}%,email.ilike.%${appliedSearch}%,phone.ilike.%${appliedSearch}%`
-      )
-    }
-
-    const PAGE_SIZE = 12
-    const from = (page - 1) * PAGE_SIZE
-    const to = from + PAGE_SIZE - 1
-
-    const { data, count, error } = await query
-      .range(from, to)
-      .order('created_at', { ascending: false })
-
-    setLoading(false)
-
-    if (error) {
-      setUsers([])
-      setTotal(0)
-      setUserCourseMap({})
-      setErrorText(error.message || t.common.noData)
-    } else if (data) {
-      setUsers(data)
-      setTotal(count || 0)
-      setSelected([])
-      setAllSelected(false)
-      setShowActions(false)
-      loadUserCourses(data.map(u => u.id))
-    } else {
-      setUsers([])
-      setTotal(0)
-      setUserCourseMap({})
-      setErrorText(t.common.noData)
-    }
-  }
-
-  async function loadUserCourses(userIds) {
-    if (!userIds.length) {
-      setUserCourseMap({})
-      return
-    }
-    const { data } = await supabase
-      .from('courses')
-      .select('student_id, course_id, created_at')
-      .in('student_id', userIds)
-      .order('created_at', { ascending: false })
-
-    const map = {}
-    if (data && data.length) {
-      data.forEach(row => {
-        if (!map[row.student_id]) {
-          map[row.student_id] = row.course_id?.toString()
-        }
-      })
-    }
-    setUserCourseMap(map)
-  }
-
-  function handleRoleRadio(e) {
-    setRoleFilter(e.target.value)
-    setPage(1)
-  }
-
-  function handleSearch(e) {
-    const value = e.target.value
-    setSearch(value)
-    setPage(1)
-
-    if (value.length === 0) {
-      setLastSearch('')
-    } else if (value.length >= 3) {
-      setLastSearch(value)
-    }
-  }
-
-  function handleSelect(id) {
-    let next
-    if (selected.includes(id)) {
-      next = selected.filter((uid) => uid !== id)
-    } else {
-      next = [...selected, id]
-    }
-    setSelected(next)
-    setShowActions(next.length > 0)
-    setAllSelected(next.length === users.length && users.length > 0)
-  }
-
-  function handleSelectAll() {
-    if (allSelected) {
-      setSelected([])
-      setAllSelected(false)
-      setShowActions(false)
-    } else {
-      const ids = users.map((u) => u.id)
-      setSelected(ids)
-      setAllSelected(true)
-      setShowActions(ids.length > 0)
-    }
-  }
-
+  // Action handlers using SWR hooks
   async function handleAction(action) {
     let newRole = null
     if (action === 'toSupervisor') newRole = 'supervisor'
     if (action === 'toAdmin') newRole = 'admin'
     if (action === 'toPublic') newRole = 'public'
 
-    if (action === 'delete') {
-      await supabase.from('profiles').delete().in('id', selected)
-    } else if (newRole) {
-      await supabase.from('profiles').update({ role: newRole }).in('id', selected)
+    if (newRole) {
+      const result = await bulkUpdateRole(selection.selected, newRole)
+      if (!result.success) {
+        alert(result.error || 'Failed to update roles')
+      }
+    } else if (action === 'delete') {
+      if (confirm('Are you sure you want to delete selected users?')) {
+        const result = await bulkDelete(selection.selected)
+        if (!result.success) {
+          alert(result.error || 'Failed to delete users')
+        }
+      }
     }
-    fetchAll(lastSearch)
   }
 
-  const PAGE_SIZE = 12
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  function handleRoleRadio(e) {
+    filters.updateFilter('role', e.target.value)
+  }
 
+  function handleSearch(e) {
+    search.setSearch(e.target.value)
+  }
+
+  function handleSelect(id) {
+    selection.toggleSelection(id)
+  }
+
+  function handleSelectAll() {
+    selection.toggleSelectAll(users)
+  }
+
+  // Helper functions
   function getOrgName(orgId) {
-    const org = orgs[orgId]
+    const org = orgMap[orgId]
     if (!org) return '-'
     if (lang === 'en') return org.name_en || org.name_ru || '-'
     return org.name_ru || org.name_en || '-'
   }
 
   function getUserCourseTitle(userId) {
-    const courseId = userCourseMap[userId]
+    const courseId = courseMap[userId]
     if (!courseId) return t.common.noCourse
-    const courseTitle = coursesMap[courseId.toString()]
+    const courseTitle = coursesMap[courseId.toString()]?.title
     return courseTitle || courseId
   }
 
-  // ---- ВСТАВКА: Открытие модального окна для редактирования ----
+  // Modal handlers
   function openEditModal() {
-    if (selected.length === 1) {
-      const user = users.find(u => u.id === selected[0])
+    if (selection.selectedCount === 1) {
+      const user = users.find(u => u.id === selection.selected[0])
       setEditUser(user)
       setEditModalOpen(true)
+    }
+  }
+
+  // Single user action handler
+  async function handleSingleUserToggle(userId, currentActive) {
+    const result = await toggleUserStatus(userId, !currentActive)
+    if (!result.success) {
+      alert(result.error || 'Failed to update user status')
     }
   }
 
@@ -239,39 +137,39 @@ export default function UsersTable({ lang = "ru" }) {
       <div className="flex flex-wrap gap-4 items-center mb-6">
         <div className="filter flex gap-2">
           <input
-            className={`btn filter-reset${roleFilter === 'all' ? ' btn-primary' : ''}`}
+            className={`btn filter-reset${filters.filters.role === 'all' ? ' btn-primary' : ''}`}
             type="radio"
             name="usersTypes"
             aria-label={t.common.all}
             value="all"
-            checked={roleFilter === 'all'}
+            checked={filters.filters.role === 'all'}
             onChange={handleRoleRadio}
           />
           <input
-            className={`btn${roleFilter === 'public' ? ' btn-primary' : ''}`}
+            className={`btn${filters.filters.role === 'public' ? ' btn-primary' : ''}`}
             type="radio"
             name="usersTypes"
             aria-label={t.roles?.public || 'Public'}
             value="public"
-            checked={roleFilter === 'public'}
+            checked={filters.filters.role === 'public'}
             onChange={handleRoleRadio}
           />
           <input
-            className={`btn${roleFilter === 'supervisor' ? ' btn-primary' : ''}`}
+            className={`btn${filters.filters.role === 'supervisor' ? ' btn-primary' : ''}`}
             type="radio"
             name="usersTypes"
             aria-label={t.roles?.supervisor || 'Sups'}
             value="supervisor"
-            checked={roleFilter === 'supervisor'}
+            checked={filters.filters.role === 'supervisor'}
             onChange={handleRoleRadio}
           />
           <input
-            className={`btn${roleFilter === 'admin' ? ' btn-primary' : ''}`}
+            className={`btn${filters.filters.role === 'admin' ? ' btn-primary' : ''}`}
             type="radio"
             name="usersTypes"
             aria-label={t.roles?.admin || 'Admins'}
             value="admin"
-            checked={roleFilter === 'admin'}
+            checked={filters.filters.role === 'admin'}
             onChange={handleRoleRadio}
           />
         </div>
@@ -282,7 +180,7 @@ export default function UsersTable({ lang = "ru" }) {
             type="search"
             className="grow"
             placeholder={t.common.search}
-            value={search}
+            value={search.search}
             onChange={handleSearch}
             minLength={0}
           />
@@ -319,7 +217,7 @@ export default function UsersTable({ lang = "ru" }) {
         {/* Кнопка для открытия модального окна редактирования */}
         <button
           className="btn btn-primary"
-          style={{ display: selected.length === 1 ? undefined : 'none' }}
+          style={{ display: selection.selectedCount === 1 ? undefined : 'none' }}
           onClick={openEditModal}
         >
           {t.common?.editUser}
@@ -340,7 +238,7 @@ export default function UsersTable({ lang = "ru" }) {
                 <input
                   type="checkbox"
                   className="checkbox"
-                  checked={allSelected}
+                  checked={selection.allSelected}
                   onChange={handleSelectAll}
                 />
               </th>
@@ -351,25 +249,25 @@ export default function UsersTable({ lang = "ru" }) {
             </tr>
           </thead>
           <tbody>
-            {loading && (
+            {isLoading && (
               <tr>
                 <td colSpan={5}>
                   <span className="loading loading-spinner loading-md">{t.common.loading}</span>
                 </td>
               </tr>
             )}
-            {!loading && users.length === 0 && (
+            {!isLoading && users.length === 0 && (
               <tr>
                 <td colSpan={5}>{t.common.noData}</td>
               </tr>
             )}
-            {!loading && users.map(user => {
+            {!isLoading && users.map(user => {
               const roleData = ROLE_DATA[user.role] || ROLE_DATA.public
               const courseTitle = getUserCourseTitle(user.id)
               return (
                 <tr
                   key={user.id}
-                  className={selected.includes(user.id) ? "bg-base-200" : ""}
+                  className={selection.isSelected(user.id) ? "bg-base-200" : ""}
                   onClick={() => handleSelect(user.id)}
                   style={{ cursor: "pointer" }}
                 >
@@ -377,7 +275,7 @@ export default function UsersTable({ lang = "ru" }) {
                     <input
                       type="checkbox"
                       className="checkbox"
-                      checked={selected.includes(user.id)}
+                      checked={selection.isSelected(user.id)}
                       onChange={() => handleSelect(user.id)}
                       onClick={e => e.stopPropagation()}
                     />
@@ -413,11 +311,7 @@ export default function UsersTable({ lang = "ru" }) {
                         checked={user.active}
                         onChange={async (e) => {
                           e.stopPropagation()
-                          await supabase
-                            .from('profiles')
-                            .update({ active: !user.active })
-                            .eq('id', user.id)
-                          fetchAll(lastSearch)
+                          await handleSingleUserToggle(user.id, user.active)
                         }}
                       />
                     </label>
@@ -429,36 +323,36 @@ export default function UsersTable({ lang = "ru" }) {
         </table>
       </div>
 
-      {total > PAGE_SIZE && (
+      {totalUsers > pagination.pageSize && (
         <div className="join justify-center flex mt-6">
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
+          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
             .filter(i =>
               i === 1 ||
-              i === totalPages ||
-              (i >= page - 1 && i <= page + 1)
+              i === pagination.totalPages ||
+              (i >= pagination.page - 1 && i <= pagination.page + 1)
             ).map((p, idx, arr) =>
               arr[idx - 1] && p - arr[idx - 1] > 1 ? (
                 <button className="join-item btn btn-disabled" key={'dots' + p}>...</button>
               ) : (
                 <button
                   key={p}
-                  className={`join-item btn${page === p ? ' btn-primary' : ''}`}
-                  onClick={() => setPage(p)}
+                  className={`join-item btn${pagination.page === p ? ' btn-primary' : ''}`}
+                  onClick={() => pagination.goToPage(p)}
                 >{p}</button>
               )
             )}
         </div>
       )}
 
-      {/* Само модальное окно редактирования */}
+      {/* Modal for user editing */}
       {editModalOpen && (
         <UserEdit
           open={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           user={editUser}
-          orgs={orgs}
+          orgs={orgMap}
           lang={lang}
-          onSaved={() => fetchAll(lastSearch)}
+          onSaved={() => refresh()}
         />
       )}
     </div>

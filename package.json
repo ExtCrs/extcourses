@@ -16,7 +16,8 @@
     "react-dom": "^19.0.0",
     "react-simple-wysiwyg": "^3.4.0",
     "react-sketch-canvas": "^6.2.0",
-    "simplify-js": "^1.2.4"
+    "simplify-js": "^1.2.4",
+    "swr": "^2.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

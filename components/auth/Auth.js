@@ -23,6 +23,10 @@ const Auth = ({ lang = 'ru' }) => {
   const [loading, setLoading] = useState(!IS_FIXED_ORG)
   const [orgs, setOrgs] = useState([])
   const [isAuth, setIsAuth] = useState(false)
+  const [showPasswordRecovery, setShowPasswordRecovery] = useState(false)
+  const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [recoveryLoading, setRecoveryLoading] = useState(false)
+  const [recoverySuccess, setRecoverySuccess] = useState(false)
 
   // Проверка авторизации
   useEffect(() => {
@@ -133,6 +137,29 @@ const Auth = ({ lang = 'ru' }) => {
     } else {
       window.location.href = `/${lang}/courses`
     }
+  }
+
+  const handlePasswordRecovery = async () => {
+    setError('')
+    setRecoveryLoading(true)
+    
+    if (!recoveryEmail) {
+      setError(t.auth.recovery_email_required)
+      setRecoveryLoading(false)
+      return
+    }
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+      redirectTo: `${window.location.origin}/${lang}/auth/reset-password`
+    })
+    
+    if (error) {
+      setError(error.message)
+    } else {
+      setRecoverySuccess(true)
+    }
+    
+    setRecoveryLoading(false)
   }
 
   // Если уже авторизован — ничего не показываем
@@ -288,6 +315,91 @@ const Auth = ({ lang = 'ru' }) => {
           </button>
         </fieldset>
       )}
+      <div className="my-8">
+        <button 
+          className="btn btn-link no-underline hover:underline opacity-60" 
+          onClick={() => setShowPasswordRecovery(!showPasswordRecovery)}
+        >
+          {t.common.recover_pass}
+        </button>
+        
+        {/* Password Recovery Form */}
+        {showPasswordRecovery && (
+          <div className="mt-4 p-4 bg-base-200 border border-base-300 rounded-box max-w-xs mx-auto">
+            {!recoverySuccess ? (
+              <>
+                <h3 className="text-lg font-semibold mb-3 text-center">
+                  {t.auth.password_recovery_title}
+                </h3>
+                <p className="text-sm text-base-content/70 mb-4 text-center">
+                  {t.auth.password_recovery_description}
+                </p>
+                
+                <label className="label">
+                  <span className="label-text">{t.auth.email}</span>
+                </label>
+                <input
+                  type="email"
+                  className="input input-bordered w-full mb-4"
+                  placeholder={t.auth.enter_recovery_email}
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                />
+                
+                {error && <p className="text-error text-sm mb-4">{error}</p>}
+                
+                <div className="flex gap-2">
+                  <button
+                    className="btn btn-primary btn-sm flex-1"
+                    onClick={handlePasswordRecovery}
+                    disabled={recoveryLoading}
+                  >
+                    {recoveryLoading ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : (
+                      t.auth.send_recovery_email
+                    )}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setShowPasswordRecovery(false)
+                      setRecoveryEmail('')
+                      setError('')
+                      setRecoverySuccess(false)
+                    }}
+                  >
+                    {t.common.cancel}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center">
+                  <div className="text-success text-2xl mb-2">✅</div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    {t.auth.recovery_email_sent}
+                  </h3>
+                  <p className="text-sm text-base-content/70 mb-4">
+                    {t.auth.recovery_email_sent_description}
+                  </p>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      setShowPasswordRecovery(false)
+                      setRecoveryEmail('')
+                      setError('')
+                      setRecoverySuccess(false)
+                    }}
+                  >
+                    {t.auth.back_to_login}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
