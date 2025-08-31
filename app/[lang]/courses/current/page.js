@@ -8,7 +8,7 @@ import coursesData from "@/data/courses.json";
 import dynamic from "next/dynamic";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import LessonMenu from '@/components/displays/current_course/LessonMenu';
-import { getBadge, loadLessonsMap } from '@/components/displays/current_course/utils';
+import { getBadge, loadLessonsMap, detectCurrentLesson } from '@/components/displays/current_course/utils';
 import CourseStats from "@/components/displays/CourseStats";
 
 const CurrentCourse = dynamic(() => import('@/components/displays/current_course/CurrentCourse'), { ssr: false });
@@ -24,14 +24,7 @@ export default function CurrentCoursePage({ params }) {
   const [user, setUser] = useState(null);
   const [updating, setUpdating] = useState(false);
 
-  const [activeLesson, setActiveLesson] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = window.localStorage.getItem('activeLesson');
-      const num = Number(saved);
-      return Number.isFinite(num) && num > 0 ? num : 1;
-    }
-    return 1;
-  })
+  const [activeLesson, setActiveLesson] = useState(1); // Начальное значение, будет обновлено автоматически
   const [lessonsMap, setLessonsMap] = useState({});
 
   useEffect(() => {
@@ -84,12 +77,18 @@ export default function CurrentCoursePage({ params }) {
       const lessonsMap = await loadLessonsMap(current.id, current.student_id);
       setLessonsMap(lessonsMap);
 
+      // Всегда применяем автоматическое определение при загрузке страницы
+      const totalLessons = Number(courseObj?.total_lessons) || 1;
+      const detectedLesson = detectCurrentLesson(lessonsMap, totalLessons);
+      setActiveLesson(detectedLesson);
+
       setLoading(false);
     }
 
     fetchData();
   }, []);
 
+  // Сохраняем выбор пользователя в localStorage только при ручном выборе
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('activeLesson', String(activeLesson));

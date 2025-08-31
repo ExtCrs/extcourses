@@ -165,3 +165,19 @@ export function translateWithParams(template, params = {}) {
     template
   );
 }
+
+// Автоматическое определение текущего урока
+export function detectCurrentLesson(lessonsMap, totalLessons) {
+  // Проходим все уроки начиная с первого
+  for (let lessonNum = 1; lessonNum <= totalLessons; lessonNum++) {
+    const status = lessonsMap[lessonNum];
+    
+    // Если урок не начат (нет статуса) или статус "rejected"
+    if (!status || status === 'rejected') {
+      return lessonNum;
+    }
+  }
+  
+  // Если все уроки имеют статус (и ни один не rejected), возвращаем последний
+  return totalLessons;
+}
