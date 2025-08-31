@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase/client'
 import { getTranslations } from '@/lib/i18n'
 import CoursesButton from '@/components/navs/CoursesButton'
 import NovisLogo from '@/components/graphics/NovisLogo'
+import TampaLogo from '@/components/graphics/TampaLogo'
 
 const Logout = dynamic(() => import('@/components/auth/Logout'), { ssr: false })
 
@@ -152,9 +153,11 @@ export default function LangShell({ children, lang = 'ru' }) {
           >
             {/* Логотип оставляем по прежнему условию:
                orgEnv === '1' → NovisLogo, иначе → ScnLogo */}
-            {String(orgEnv) === '1'
-              ? <NovisLogo className="mx-auto w-28 mt-1 mr-2" monochrome />
-              : <ScnLogo className="mx-auto w-12 mr-2" monochrome />
+            {
+              {
+                '1': <NovisLogo className="mx-auto w-28 mt-1 mr-2" monochrome />,
+                '4': <TampaLogo className="mx-auto w-14 mr-2 pb-1" monochrome />
+              }[String(orgEnv)] || <ScnLogo className="mx-auto w-12 mr-2" monochrome />
             }
             <span className="hidden sm:block">{t.common.ext_courses}</span>
           </Link>

@@ -147,11 +147,46 @@ export function useAuth() {
     }
   }
 
-  const resetPassword = async (email) => {
+  const resetPassword = async (email, options = {}) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email)
+      // First, check if the email exists in the profiles table
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email)
+        .single()
+      
+      if (checkError && checkError.code === 'PGRST116') {
+        // User not found
+        throw new Error('The email address you entered is not found in the system')
+      }
+      
+      if (checkError) {
+        // Other database error
+        throw checkError
+      }
+      
+      // User exists, proceed with password recovery
+      if (existingUser) {
+        // Use NEXT_PUBLIC_SITE_URL if available, otherwise fallback to window.location.origin
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+        
+        // Default language if not specified
+        const lang = options.lang || 'ru'
+        
+        const resetOptions = {
+          redirectTo: `${siteUrl}/${lang}/auth/reset-password`,
+          emailRedirectTo: `${siteUrl}/${lang}/auth/reset-password`,
+          data: {
+            lang: lang // Pass language to email template
+          },
+          ...options
+        }
+        
+        const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions)
 
-      if (error) throw error
+        if (error) throw error
+      }
 
       return { success: true }
     } catch (error) {

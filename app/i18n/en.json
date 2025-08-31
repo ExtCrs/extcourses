@@ -180,6 +180,7 @@
     "enter_recovery_email": "Enter your email address",
     "send_recovery_email": "Send Recovery Email",
     "recovery_email_required": "Please enter your email address",
+    "email_not_found": "The email address you entered is not found in the system",
     "recovery_email_sent": "Recovery Email Sent",
     "recovery_email_sent_description": "Check your email for a password reset link. It may take a few minutes to arrive.",
     "back_to_login": "Back to Login",

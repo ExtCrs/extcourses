@@ -149,14 +149,46 @@ const Auth = ({ lang = 'ru' }) => {
       return
     }
     
-    const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
-      redirectTo: `${window.location.origin}/${lang}/auth/reset-password`
-    })
+    // First, check if the email exists in the profiles table
+    const { data: existingUser, error: checkError } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('email', recoveryEmail)
+      .single()
     
-    if (error) {
-      setError(error.message)
-    } else {
-      setRecoverySuccess(true)
+    if (checkError && checkError.code === 'PGRST116') {
+      // User not found
+      setError(t.auth.email_not_found)
+      setRecoveryLoading(false)
+      return
+    }
+    
+    if (checkError) {
+      // Other database error
+      setError(checkError.message)
+      setRecoveryLoading(false)
+      return
+    }
+    
+    // User exists, proceed with password recovery
+    if (existingUser) {
+      // Use NEXT_PUBLIC_SITE_URL if available, otherwise fallback to window.location.origin
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+        redirectTo: `${siteUrl}/${lang}/auth/reset-password`,
+        // Send email in the current language
+        emailRedirectTo: `${siteUrl}/${lang}/auth/reset-password`,
+        data: {
+          lang: lang // Pass language to email template
+        }
+      })
+      
+      if (error) {
+        setError(error.message)
+      } else {
+        setRecoverySuccess(true)
+      }
     }
     
     setRecoveryLoading(false)
@@ -316,12 +348,15 @@ const Auth = ({ lang = 'ru' }) => {
         </fieldset>
       )}
       <div className="my-8">
-        <button 
-          className="btn btn-link no-underline hover:underline opacity-60" 
-          onClick={() => setShowPasswordRecovery(!showPasswordRecovery)}
-        >
-          {t.common.recover_pass}
-        </button>
+        {/* Show password recovery button only when form is not displayed */}
+        {!showPasswordRecovery && (
+          <button 
+            className="btn btn-link no-underline hover:underline opacity-60" 
+            onClick={() => setShowPasswordRecovery(true)}
+          >
+            {t.common.recover_pass}
+          </button>
+        )}
         
         {/* Password Recovery Form */}
         {showPasswordRecovery && (
