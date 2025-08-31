@@ -16,6 +16,7 @@ import { getTranslations } from '@/lib/i18n'
 import CoursesButton from '@/components/navs/CoursesButton'
 import NovisLogo from '@/components/graphics/NovisLogo'
 import TampaLogo from '@/components/graphics/TampaLogo'
+import LangAttributeSetter from '@/components/utils/LangAttributeSetter'
 
 const Logout = dynamic(() => import('@/components/auth/Logout'), { ssr: false })
 
@@ -124,6 +125,8 @@ export default function LangShell({ children, lang = 'ru' }) {
   // Здесь строим только внутреннюю структуру страницы.
   return (
     <div className="flex-1 flex flex-col">
+      {/* Set the HTML lang attribute dynamically */}
+      <LangAttributeSetter lang={lang} />
       <nav className="navbar rounded-b-md shadow bg-secondary/10">
         <div className="flex-1">
           {/* Меню только для авторизованных */}

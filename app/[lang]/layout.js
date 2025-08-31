@@ -5,6 +5,17 @@ import LangShell from './LangShell';
 import { getTranslations } from '@/lib/i18n';
 
 /**
+ * Generate static params for supported languages
+ * This ensures both /ru and /en routes are pre-generated
+ */
+export function generateStaticParams() {
+  return [
+    { lang: 'ru' },
+    { lang: 'en' }
+  ]
+}
+
+/**
  * Генерация метаданных для корневого сегмента /[lang]
  * — params в Next.js 15 асинхронный, поэтому обязательно await.
  * — используем только локальные JSON-переводы (дёшево для Vercel Free).

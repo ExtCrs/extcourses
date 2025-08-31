@@ -11,7 +11,7 @@ export const metadata = {
 // которые раньше были в [lang]/layout.js, чтобы не было рассинхрона при гидрации.
 export default function RootLayout({ children }) {
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <body className="max-w-7xl mx-auto min-h-screen flex flex-col">
         <SWRProvider>
           {children}

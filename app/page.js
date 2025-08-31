@@ -1,7 +1,7 @@
 // app/page.js
-import { redirect } from 'next/navigation'
+import LanguageDetector from '@/components/utils/LanguageDetector'
 
-// Серверный редирект на дефолтный язык
-export default function DefaultRedirect() {
-  redirect('/ru')
+// Root page with automatic language detection
+export default function HomePage() {
+  return <LanguageDetector />
 }

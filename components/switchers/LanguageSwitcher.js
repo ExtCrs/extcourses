@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useSearchParams } from "next/navigation";
+import { saveLanguagePreference } from '@/lib/utils/languageDetection';
 
 export default function LanguageSwitcher({ currentLang }) {
   const otherLang = currentLang === 'ru' ? 'en' : 'ru';
@@ -17,6 +18,11 @@ export default function LanguageSwitcher({ currentLang }) {
 
   const handleSwitch = (e) => {
     e.preventDefault();
+    
+    // Save user's language preference
+    saveLanguagePreference(otherLang);
+    
+    // Redirect to the new language
     window.location.href = href; // Полная перезагрузка страницы!
   };
 
