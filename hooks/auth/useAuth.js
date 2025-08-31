@@ -168,7 +168,7 @@ export function useAuth() {
       
       // User exists, proceed with password recovery
       if (existingUser) {
-        // Use NEXT_PUBLIC_SITE_URL if available, otherwise fallback to window.location.origin
+        // Use NEXT_PUBLIC_SITE_URL if set in production, otherwise use current domain
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
         
         // Default language if not specified

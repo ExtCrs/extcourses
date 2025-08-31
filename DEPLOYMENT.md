@@ -67,7 +67,10 @@ NEXT_PUBLIC_SITE_URL=https://site2.com
 
 ### Password Recovery Links Show localhost
 - **Problem**: Password recovery emails contain `localhost` links in production
-- **Solution**: Set `NEXT_PUBLIC_SITE_URL` to your production domain
+- **Solution**: Set `NEXT_PUBLIC_SITE_URL` to your actual production domain (not placeholder)
+- **Example**: `NEXT_PUBLIC_SITE_URL=https://courses.yourorg.com` (replace with real domain)
+- **Critical**: Never leave `https://your-production-domain.com` placeholder in production
+- **See**: `PRODUCTION_SETUP.md` for detailed configuration guide
 
 ### Password Recovery Not Working
 - **Check**: Supabase Auth settings for the correct redirect URL patterns

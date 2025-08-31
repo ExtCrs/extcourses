@@ -172,8 +172,10 @@ const Auth = ({ lang = 'ru' }) => {
     
     // User exists, proceed with password recovery
     if (existingUser) {
-      // Use NEXT_PUBLIC_SITE_URL if available, otherwise fallback to window.location.origin
+      // Use NEXT_PUBLIC_SITE_URL if set in production, otherwise use current domain
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      
+      console.log('Using site URL for password recovery:', siteUrl) // Debug log
       
       const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
         redirectTo: `${siteUrl}/${lang}/auth/reset-password`,
