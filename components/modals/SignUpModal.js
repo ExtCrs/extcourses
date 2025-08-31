@@ -16,7 +16,9 @@ const SignUpModal = ({ open, onClose, courseId, courseTitle, lang }) => {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [activeCourse, setActiveCourse] = useState(null)
-  const [currentOrgId, setCurrentOrgId] = useState(null)
+  
+  // Используем организацию сайта, а не пользователя
+  const siteOrgId = process.env.NEXT_PUBLIC_ORG ? Number(process.env.NEXT_PUBLIC_ORG) : null
 
   useEffect(() => {
     if (open) {
@@ -24,7 +26,6 @@ const SignUpModal = ({ open, onClose, courseId, courseTitle, lang }) => {
       setErrorMsg('')
       setLoading(false)
       setActiveCourse(null)
-      setCurrentOrgId(null)
       modalRef.current?.showModal()
       checkStudentCourse()
     } else {
@@ -40,26 +41,24 @@ const SignUpModal = ({ open, onClose, courseId, courseTitle, lang }) => {
         setErrorMsg(t.courses.signup_modal_auth_error)
         return
       }
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('current_org_id')
-        .eq('id', user.id)
-        .single()
-      if (profileError || !profile?.current_org_id) {
-        setErrorMsg(t.courses.signup_modal_profile_error)
+      
+      if (!siteOrgId) {
+        setErrorMsg('Ошибка конфигурации организации')
         return
       }
-      setCurrentOrgId(profile.current_org_id)
+      
+      // Проверяем курсы в организации сайта
       const { data: studentCourses, error: coursesError } = await supabase
         .from('courses')
         .select('id, course_id, state')
         .eq('student_id', user.id)
-        .eq('org_id', profile.current_org_id)
+        .eq('org_id', siteOrgId)
 
       if (coursesError) {
         setErrorMsg(t.courses.signup_modal_unexpected_error)
         return
       }
+      
       const foundActive = studentCourses?.find(c => !allowedToSignUpStates.includes(c.state))
       if (foundActive) {
         setActiveCourse(foundActive)
@@ -85,22 +84,26 @@ const SignUpModal = ({ open, onClose, courseId, courseTitle, lang }) => {
         setLoading(false)
         return
       }
-      if (!currentOrgId) {
-        setErrorMsg(t.courses.signup_modal_profile_error)
+      
+      if (!siteOrgId) {
+        setErrorMsg('Ошибка конфигурации организации')
         setLoading(false)
         return
       }
+      
+      // Проверяем ещё раз перед записью
       const { data: studentCourses, error: coursesError } = await supabase
         .from('courses')
         .select('id, course_id, state')
         .eq('student_id', user.id)
-        .eq('org_id', currentOrgId)
+        .eq('org_id', siteOrgId)
 
       if (coursesError) {
         setErrorMsg(t.courses.signup_modal_unexpected_error)
         setLoading(false)
         return
       }
+      
       const foundActive = studentCourses?.find(c => !allowedToSignUpStates.includes(c.state))
       if (foundActive) {
         setActiveCourse(foundActive)
@@ -109,19 +112,26 @@ const SignUpModal = ({ open, onClose, courseId, courseTitle, lang }) => {
         return
       }
 
+      // Записываем на курс в организации сайта
       const { error: insertError } = await supabase
         .from('courses')
         .insert([{
           course_id: courseId,
-          org_id: currentOrgId,
+          org_id: siteOrgId,
           student_id: user.id,
           state: 'SignUp'
         }])
+        
       if (insertError) {
-        setErrorMsg(insertError.message || t.courses.signup_modal_insert_error)
+        if (insertError.code === '23505') { // unique constraint violation
+          setErrorMsg(t.courses.signup_modal_unique_error)
+        } else {
+          setErrorMsg(insertError.message || t.courses.signup_modal_insert_error)
+        }
         setLoading(false)
         return
       }
+      
       setSuccess(true)
       setLoading(false)
     } catch (e) {
