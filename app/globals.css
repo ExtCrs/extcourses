@@ -46,3 +46,26 @@
 .rsw-btn {
   @apply !text-base-content
 }
+
+/* Custom scrollbar for course descriptions */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(var(--s) / 0.3) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: oklch(var(--s) / 0.3);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(var(--s) / 0.5);
+}

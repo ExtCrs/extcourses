@@ -138,8 +138,8 @@ export default function CoursesPage({ params }) {
             </figure>
             <div className="card-body p-4">
               <h2 className="card-title mb-2">{getCourseTitle(course)}</h2>
-              <p
-                className="mb-4 line-clamp-4"
+              <div 
+                className="mb-4 h-24 overflow-y-auto text-sm leading-relaxed border-l-2 border-secondary/20 pl-3 custom-scrollbar"
                 dangerouslySetInnerHTML={{
                   __html: getCourseIntro(course)
                 }}
