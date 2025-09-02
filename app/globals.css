@@ -9,13 +9,16 @@
 }
 
 .rsw-editor.rsw-editor {
-  @apply border border-secondary/20
+  @apply border border-secondary/20;
 }
 .rsw-toolbar {
   display: none !important;
   margin: 0;
   background: none !important;
   border-radius: 0;
+}
+.rsw-toolbar {
+  @apply !border-secondary/30;
 }
 .rsw-editor.selection .rsw-toolbar {
   margin-bottom: 0;
@@ -41,6 +44,9 @@
 /* Скрываем последний разделитель (если он единственный или последний) */
 .rsw-toolbar .rsw-separator:last-child {
   display: none !important;
+}
+.rsw-separator {
+  @apply !border-secondary/30;
 }
 
 .rsw-btn {

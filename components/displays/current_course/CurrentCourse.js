@@ -5,6 +5,7 @@ import { getTranslations } from '@/lib/i18n';
 import { useLesson } from '@/hooks/lessons';
 import LessonTaskCard from './LessonTaskCard';
 import LessonMenu from './LessonMenu';
+import SimpleEditor from '@/components/editor/SimpleEditor';
 import {
   loadTasks,
   loadLessonsMap,
@@ -15,7 +16,8 @@ import {
   canSendLesson,
   canSendCorrectedLesson,
   setLessonAnswersStatusToDone,
-  translateWithParams
+  translateWithParams,
+  calculateLessonScore
 } from './utils';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 
@@ -46,8 +48,13 @@ export default function CurrentCourse({
   const [chatEditor, setChatEditor] = useState({});
   const [chatInput, setChatInput] = useState({});
   
-  // Refs for auto-scrolling to specific tasks
+  // Supervisor comment state
+  const [supervisorComment, setSupervisorComment] = useState('');
+  
+  // Refs for auto-scrolling to specific task input areas
   const taskRefs = useRef({});
+  const inputAreaRefs = useRef({});
+  const hasAutoScrolled = useRef(false); // Track if auto-scroll has happened
 
   // Use the useLesson hook for safe lesson loading
   const { lesson, isLoading: lessonLoading, error: lessonError, refresh: refreshLesson } = useLesson(
@@ -93,7 +100,11 @@ export default function CurrentCourse({
   // Update answers when lesson data changes from SWR hook
   useEffect(() => {
     setAnswers(Array.isArray(lesson?.answers) ? lesson.answers : []);
-  }, [lesson]);
+    // Load existing supervisor comment if available
+    if (lesson?.comment && isSup) {
+      setSupervisorComment(lesson.comment);
+    }
+  }, [lesson, isSup]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -117,14 +128,15 @@ export default function CurrentCourse({
     return answers.find(a => a.id === taskId) || null;
   };
 
-  // Auto-scroll functionality for lessons with specific statuses
+  // Auto-scroll functionality for lessons with specific statuses (only on initial load)
   useEffect(() => {
-    if (!lesson || !lessonTasks.length || loading) return;
+    // Only auto-scroll once per lesson load and if not a supervisor
+    if (!lesson || !lessonTasks.length || loading || isSup || hasAutoScrolled.current) return;
     
     const lessonStatus = lesson.status;
     const shouldAutoScroll = lessonStatus === 'in_progress' || lessonStatus === 'rejected';
     
-    if (!shouldAutoScroll || isSup) return; // Don't auto-scroll for supervisors
+    if (!shouldAutoScroll) return;
     
     // Delay to ensure DOM is fully rendered
     const scrollTimer = setTimeout(() => {
@@ -155,18 +167,21 @@ export default function CurrentCourse({
         targetTaskId = rejectedTask?.id;
       }
       
-      // Scroll to the target task if found
-      if (targetTaskId && taskRefs.current[targetTaskId]) {
-        taskRefs.current[targetTaskId].scrollIntoView({
+      // Scroll to the target input area if found
+      if (targetTaskId && inputAreaRefs.current[targetTaskId]) {
+        inputAreaRefs.current[targetTaskId].scrollIntoView({
           behavior: 'smooth',
           block: 'center',
           inline: 'nearest'
         });
+        
+        // Mark as scrolled to prevent future auto-scrolls
+        hasAutoScrolled.current = true;
       }
     }, 500); // 500ms delay to ensure everything is rendered
     
     return () => clearTimeout(scrollTimer);
-  }, [lesson, lessonTasks, answers, loading, isSup]);
+  }, [lesson, lessonTasks, loading, isSup]); // Removed 'answers' dependency
 
   // Function to register task refs
   const registerTaskRef = (taskId, ref) => {
@@ -176,6 +191,20 @@ export default function CurrentCourse({
       delete taskRefs.current[taskId];
     }
   };
+
+  // Function to register input area refs
+  const registerInputAreaRef = (taskId, ref) => {
+    if (ref) {
+      inputAreaRefs.current[taskId] = ref;
+    } else {
+      delete inputAreaRefs.current[taskId];
+    }
+  };
+
+  // Reset auto-scroll flag when active lesson changes
+  useEffect(() => {
+    hasAutoScrolled.current = false;
+  }, [activeLesson]);
 
   const handleChange = (taskId, value) => {
     setAnswers((prev) => {
@@ -388,6 +417,9 @@ const handleReviewLesson = async (finalStatus) => {
         })
       : answers;
 
+    // Recalculate score based on current lesson state
+    const score = calculateLessonScore(lessonTasks, newAnswers);
+
     try {
       const saved = await saveLesson({
         course_ref_id,
@@ -397,6 +429,8 @@ const handleReviewLesson = async (finalStatus) => {
         lesson_id: activeLesson,
         answers: newAnswers,
         status: finalStatus,
+        comment: supervisorComment || null,
+        score: score,
       });
 
       // Refresh lesson data from SWR cache
@@ -405,6 +439,9 @@ const handleReviewLesson = async (finalStatus) => {
       setAnswers(Array.isArray(saved?.answers) ? saved.answers : []);
       setDirty({});
       loadLessonsMap(course_ref_id, profile_id).then(setLessonsMap);
+
+      // Keep supervisor comment after save (don't clear it)
+      // Comment will persist across page reloads via lesson data
 
       // ✅ Вызов после успешной проверки
       if (typeof onReviewComplete === 'function') {
@@ -432,6 +469,21 @@ const handleReviewLesson = async (finalStatus) => {
       <h2 className="text-4xl lg:text-5xl text-center max-w-3xl font-thin font-display uppercase my-8">
         {translateWithParams(t.courses.lesson_heading, { number: activeLesson })}
       </h2>
+
+      {/* Supervisor comment display for students */}
+      {!isSup && lesson?.comment && (
+        <div className="alert alert-info flex justify-center text-center mx-4 lg:mx-0 mb-4 max-w-3xl">
+          <div>
+            <h4 className="font-bold text-lg mb-2">
+              {translateWithParams(t.courses.supervisor_comment_display, { score: lesson.score || 0 })}
+            </h4>
+            <div 
+              className="prose bg-base-200/10 border-t-2 border-secondary p-2"
+              dangerouslySetInnerHTML={{ __html: lesson.comment }}
+            />
+          </div>
+        </div>
+      )}
 
       {!isSup && lesson?.status && (
         <div className={`alert justify-center mx-4 lg:mx-0 mb-4 max-w-3xl ${
@@ -505,6 +557,7 @@ const handleReviewLesson = async (finalStatus) => {
                   user={user}
                   handleReadMark={handleReadMark}
                   isSup={isSup}
+                  registerInputAreaRef={registerInputAreaRef}
                 />
               </div>
             );
@@ -553,21 +606,39 @@ const handleReviewLesson = async (finalStatus) => {
       )}
 
       {isSup && !loading && !!lessonStatus && (
-        <div className="my-8 max-w-3xl flex justify-center gap-4">
-          <button
-            className={`btn btn-success ${saving.sendLesson ? 'loading' : ''}`}
-            onClick={() => handleReviewLesson('accepted')}
-            disabled={saving.sendLesson}
-          >
-            {t.courses.accept_lesson || 'Принять урок'}
-          </button>
-          <button
-            className={`btn btn-error ${saving.sendLesson ? 'loading' : ''}`}
-            onClick={() => handleReviewLesson('rejected')}
-            disabled={saving.sendLesson}
-          >
-            {t.courses.reject_lesson || 'Отправить на доработку'}
-          </button>
+        <div className="my-8 max-w-3xl">
+          {/* Supervisor comment input */}
+          <div className="mb-6">
+            <label className="label">
+              <span className="label-text font-semibold">{t.courses.supervisor_comment}</span>
+            </label>
+            <div className="border border-base-300 rounded-lg p-1 min-h-32">
+              <SimpleEditor
+                value={supervisorComment}
+                onChange={(e) => setSupervisorComment(e.target.value)}
+                placeholder={t.courses.supervisor_comment_placeholder}
+                disabled={saving.sendLesson}
+              />
+            </div>
+          </div>
+          
+          {/* Approve/Reject buttons */}
+          <div className="flex justify-center gap-4">
+            <button
+              className={`btn btn-success ${saving.sendLesson ? 'loading' : ''}`}
+              onClick={() => handleReviewLesson('accepted')}
+              disabled={saving.sendLesson}
+            >
+              {t.courses.accept_lesson || 'Принять урок'}
+            </button>
+            <button
+              className={`btn btn-error ${saving.sendLesson ? 'loading' : ''}`}
+              onClick={() => handleReviewLesson('rejected')}
+              disabled={saving.sendLesson}
+            >
+              {t.courses.reject_lesson || 'Отправить на доработку'}
+            </button>
+          </div>
         </div>
       )}
     </div>

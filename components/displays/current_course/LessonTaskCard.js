@@ -39,7 +39,8 @@ export default function LessonTaskCard({
   handleSendChat,
   user,
   handleReadMark,
-  isSup
+  isSup,
+  registerInputAreaRef
 }) {
   const status = ansObj?.status || ''
   const isAccepted = status === 'accepted'
@@ -132,14 +133,19 @@ export default function LessonTaskCard({
             : 'max-w-2xl font-semibold'
         }>
           {task.type === 'read' && <div className="w-16 mr-6"><BookOpenIcon className="w-12" /></div>}
-          <span className={task.type === 'read' ? '' : 'text-secondary font-bold'}>{task.question}</span>
+          <span className={task.type === 'read' ? '' : 'text-secondary font-bold'}>
+            {task.question}
+          </span>
         </div>
       </div>
 
       <div className="max-w-3xl mt-2 ml-4">
         {/* WRITE */}
         {task.type === 'write' && (
-          <fieldset className="fieldset max-w-2xl ml-14 mr-2">
+          <fieldset 
+            className="fieldset max-w-2xl ml-14 mr-2"
+            ref={(ref) => registerInputAreaRef && registerInputAreaRef(task.id, ref)}
+          >
             {!isSup && !isAccepted && canEdit ? (
               <>
                 <SimpleEditor
@@ -194,7 +200,10 @@ export default function LessonTaskCard({
 
         {/* READ */}
         {task.type === 'read' && (
-          <fieldset className="fieldset max-w-2xl mt-2 ml-14">
+          <fieldset 
+            className="fieldset max-w-2xl mt-2 ml-14"
+            ref={(ref) => registerInputAreaRef && registerInputAreaRef(task.id, ref)}
+          >
             {!isSup && ansObj?.status !== 'done' && canEdit && (
               <button
                 className="btn btn-sm btn-primary mb-2 max-w-32"
@@ -226,7 +235,10 @@ export default function LessonTaskCard({
 
         {/* PIC */}
         {task.type === 'pic' && (
-          <fieldset className="relative fieldset max-w-2xl ml-14">
+          <fieldset 
+            className="relative fieldset max-w-2xl ml-14"
+            ref={(ref) => registerInputAreaRef && registerInputAreaRef(task.id, ref)}
+          >
             <PicEditor
               initialPaths={initialPaths}
               onChangePaths={(paths) => {

@@ -64,7 +64,7 @@ export async function loadOrgId(profile_id) {
   return data?.current_org_id || null;
 }
 
-export async function saveLesson({ course_ref_id, profile_id, org_id, course_no, lesson_id, answers, status }) {
+export async function saveLesson({ course_ref_id, profile_id, org_id, course_no, lesson_id, answers, status, comment, score }) {
   const upsertObj = {
     course_ref_id,
     profile_id,
@@ -75,6 +75,8 @@ export async function saveLesson({ course_ref_id, profile_id, org_id, course_no,
     updated_at: new Date().toISOString(),
   };
   if (status) upsertObj.status = status;
+  if (comment !== undefined) upsertObj.comment = comment;
+  if (score !== undefined) upsertObj.score = score;
   const { data, error } = await safeSingleQuery(
     supabase
       .from('lessons')
@@ -180,4 +182,16 @@ export function detectCurrentLesson(lessonsMap, totalLessons) {
   
   // Если все уроки имеют завершенный статус, возвращаем последний
   return totalLessons;
+}
+
+// Вычисляет процент принятых заданий в уроке
+export function calculateLessonScore(lessonTasks, answers) {
+  if (!lessonTasks || lessonTasks.length === 0) return 0;
+  
+  const acceptedTasks = lessonTasks.filter(task => {
+    const ansObj = answers.find(a => a.id === task.id);
+    return ansObj?.status === 'accepted' || (task.type === 'read' && ansObj?.status === 'done');
+  });
+  
+  return Math.round((acceptedTasks.length / lessonTasks.length) * 100);
 }
