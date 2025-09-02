@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import CurrentCourse from '@/components/displays/current_course/CurrentCourse'
-import coursesList from '@/data/courses.json'
+import coursesList from '@/data/courses_ru.json'
 
 export default function CheckCourse({ studentId, lang, onClose }) {
   const [loading, setLoading] = useState(true)

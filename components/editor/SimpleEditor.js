@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import ReactSimpleWYSIWYG from 'react-simple-wysiwyg';
 
 export default function SimpleEditor({ value, onChange, placeholder = '', disabled = false }) {
   const wrapperRef = useRef();
   const editorRef = useRef();
+  const [hasSelection, setHasSelection] = useState(false);
 
   // Функция для очистки HTML от всех тегов и стилей - оставляем только чистый текст
   const cleanHtml = (html) => {
@@ -70,17 +71,24 @@ export default function SimpleEditor({ value, onChange, placeholder = '', disabl
     return wrapperRef.current.querySelector('.rsw-ce');
   };
 
-  // Функция для показа тулбара только при выделении (если не заблокировано)
+  // Функция для проверки выделения текста и активации кнопок тулбара
   const checkSelection = () => {
-    if (disabled) return;
+    if (disabled) {
+      setHasSelection(false);
+      return;
+    }
+    
     const selection = window.getSelection();
-    if (
-      selection &&
+    const hasTextSelected = selection &&
       selection.rangeCount > 0 &&
       selection.toString().length > 0 &&
       wrapperRef.current &&
-      wrapperRef.current.contains(selection.anchorNode)
-    ) {
+      wrapperRef.current.contains(selection.anchorNode);
+    
+    setHasSelection(hasTextSelected);
+    
+    // Управляем CSS классом для активации кнопок
+    if (hasTextSelected) {
       wrapperRef.current.classList.add('selection');
     } else {
       wrapperRef.current.classList.remove('selection');
@@ -92,6 +100,7 @@ export default function SimpleEditor({ value, onChange, placeholder = '', disabl
     if (disabled) return;
     const handleClick = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setHasSelection(false);
         wrapperRef.current.classList.remove('selection');
       }
     };
@@ -112,10 +121,21 @@ export default function SimpleEditor({ value, onChange, placeholder = '', disabl
 
   // Если редактор заблокирован — убираем selection всегда
   useEffect(() => {
-    if (disabled && wrapperRef.current) {
-      wrapperRef.current.classList.remove('selection');
+    if (disabled) {
+      setHasSelection(false);
+      if (wrapperRef.current) {
+        wrapperRef.current.classList.remove('selection');
+      }
     }
   }, [disabled]);
+
+  // Инициализация: показываем тулбар всегда, но кнопки неактивны без выделения
+  useEffect(() => {
+    if (wrapperRef.current) {
+      // Добавляем класс для постоянного отображения тулбара
+      wrapperRef.current.classList.add('toolbar-always-visible');
+    }
+  }, []);
 
   return (
     <div
@@ -123,7 +143,12 @@ export default function SimpleEditor({ value, onChange, placeholder = '', disabl
       className="rsw-editor prose prose-lg relative"
       onMouseUp={checkSelection}
       onKeyUp={checkSelection}
-      onBlur={() => !disabled && wrapperRef.current.classList.remove('selection')}
+      onBlur={() => {
+        if (!disabled) {
+          setHasSelection(false);
+          wrapperRef.current?.classList.remove('selection');
+        }
+      }}
       tabIndex={0}
     >
       <ReactSimpleWYSIWYG
@@ -133,6 +158,32 @@ export default function SimpleEditor({ value, onChange, placeholder = '', disabl
         // Сам редактор не поддерживает prop disabled, поэтому используем readOnly для contenteditable
         readOnly={disabled}
       />
+      
+      <style jsx>{`
+        :global(.rsw-editor.toolbar-always-visible .rsw-toolbar) {
+          display: flex !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+        
+        :global(.rsw-editor.toolbar-always-visible:not(.selection) .rsw-toolbar button) {
+          opacity: 0.3 !important;
+          pointer-events: none !important;
+          cursor: not-allowed !important;
+        }
+        
+        :global(.rsw-editor.toolbar-always-visible.selection .rsw-toolbar button) {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+          cursor: pointer !important;
+        }
+        
+        :global(.rsw-editor.toolbar-always-visible .rsw-toolbar) {
+          border-bottom: 1px solid #e5e7eb;
+          background-color: #f9fafb;
+          border-radius: 0.5rem 0.5rem 0 0;
+        }
+      `}</style>
       {disabled && (
         <div
           className="absolute inset-0 bg-base-200 bg-opacity-40 cursor-not-allowed flex items-center justify-center z-10 rounded-lg"

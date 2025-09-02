@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Bars3Icon } from '@heroicons/react/24/outline'
 import { supabase } from '@/lib/supabase/client'
-import coursesList from '@/data/courses.json'
+import coursesList from '@/data/courses_ru.json'
 import CurrentCourse from '@/components/displays/current_course/CurrentCourse'
 import LessonMenu from '@/components/displays/current_course/LessonMenu'
 import { loadLessonsMap, getBadge } from '@/components/displays/current_course/utils'
@@ -29,8 +29,8 @@ function getCoursesMap(lang) {
     const courseId = course.id.toString().trim()
     const title =
       lang === 'en'
-        ? (course.title_en?.toString().trim?.() || course.title_ru?.toString().trim?.() || courseId)
-        : (course.title_ru?.toString().trim?.() || course.title_en?.toString().trim?.() || courseId)
+        ? (course.title?.toString().trim?.() || courseId)
+        : (course.title?.toString().trim?.() || courseId)
     map[courseId] = title
   })
   return map

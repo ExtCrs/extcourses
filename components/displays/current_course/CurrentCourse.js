@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getTranslations } from '@/lib/i18n';
 import { useLesson } from '@/hooks/lessons';
 import LessonTaskCard from './LessonTaskCard';
@@ -45,6 +45,9 @@ export default function CurrentCourse({
   const [lessonsMap, setLessonsMap] = useState({});
   const [chatEditor, setChatEditor] = useState({});
   const [chatInput, setChatInput] = useState({});
+  
+  // Refs for auto-scrolling to specific tasks
+  const taskRefs = useRef({});
 
   // Use the useLesson hook for safe lesson loading
   const { lesson, isLoading: lessonLoading, error: lessonError, refresh: refreshLesson } = useLesson(
@@ -112,6 +115,66 @@ export default function CurrentCourse({
 
   const getAnswerObj = (taskId) => {
     return answers.find(a => a.id === taskId) || null;
+  };
+
+  // Auto-scroll functionality for lessons with specific statuses
+  useEffect(() => {
+    if (!lesson || !lessonTasks.length || loading) return;
+    
+    const lessonStatus = lesson.status;
+    const shouldAutoScroll = lessonStatus === 'in_progress' || lessonStatus === 'rejected';
+    
+    if (!shouldAutoScroll || isSup) return; // Don't auto-scroll for supervisors
+    
+    // Delay to ensure DOM is fully rendered
+    const scrollTimer = setTimeout(() => {
+      let targetTaskId = null;
+      
+      if (lessonStatus === 'in_progress') {
+        // Find first uncompleted task (no status or empty status)
+        const uncompletedTask = lessonTasks.find(task => {
+          const ansObj = getAnswerObj(task.id);
+          const status = ansObj?.status || '';
+          
+          if (task.type === 'read') {
+            return status !== 'done';
+          } else if (task.type === 'write' || task.type === 'pic') {
+            return !status || !['done', 'corrected', 'accepted'].includes(status);
+          }
+          return false;
+        });
+        
+        targetTaskId = uncompletedTask?.id;
+      } else if (lessonStatus === 'rejected') {
+        // Find first rejected task
+        const rejectedTask = lessonTasks.find(task => {
+          const ansObj = getAnswerObj(task.id);
+          return ansObj?.status === 'rejected';
+        });
+        
+        targetTaskId = rejectedTask?.id;
+      }
+      
+      // Scroll to the target task if found
+      if (targetTaskId && taskRefs.current[targetTaskId]) {
+        taskRefs.current[targetTaskId].scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }, 500); // 500ms delay to ensure everything is rendered
+    
+    return () => clearTimeout(scrollTimer);
+  }, [lesson, lessonTasks, answers, loading, isSup]);
+
+  // Function to register task refs
+  const registerTaskRef = (taskId, ref) => {
+    if (ref) {
+      taskRefs.current[taskId] = ref;
+    } else {
+      delete taskRefs.current[taskId];
+    }
   };
 
   const handleChange = (taskId, value) => {
@@ -418,29 +481,32 @@ const handleReviewLesson = async (finalStatus) => {
             const ansObj = getAnswerObj(task.id);
             const taskDisabled = ansObj && ansObj.status === 'accepted';
             return (
-              <LessonTaskCard
+              <div
                 key={task.id}
-                task={task}
-                ansObj={ansObj}
-                lang={lang}
-                canEdit={canLessonEdit && !taskDisabled && lessonStatus !== 'corrected'}
-                isLocked={isLocked}
-                dirty={dirty}
-                saving={saving}
-                orgId={orgId}
-                t={t}
-                handleChange={handleChange}
-                handleSave={handleSave}
-                chatEditor={chatEditor}
-                setChatEditor={setChatEditor}
-                chatInput={chatInput}
-                setChatInput={setChatInput}
-                handleSendChat={handleSendChat}
-                user={user}
-                handleReadMark={handleReadMark}
-                setDirty={setDirty}
-                isSup={isSup}
-              />
+                ref={(ref) => registerTaskRef(task.id, ref)}
+              >
+                <LessonTaskCard
+                  task={task}
+                  ansObj={ansObj}
+                  lang={lang}
+                  canEdit={canLessonEdit && !taskDisabled && lessonStatus !== 'corrected'}
+                  isLocked={isLocked}
+                  dirty={dirty}
+                  saving={saving}
+                  orgId={orgId}
+                  t={t}
+                  handleChange={handleChange}
+                  handleSave={handleSave}
+                  chatEditor={chatEditor}
+                  setChatEditor={setChatEditor}
+                  chatInput={chatInput}
+                  setChatInput={setChatInput}
+                  handleSendChat={handleSendChat}
+                  user={user}
+                  handleReadMark={handleReadMark}
+                  isSup={isSup}
+                />
+              </div>
             );
           })}
         </div>

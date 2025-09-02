@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
-import coursesData from '@/data/courses.json'
+import coursesData from '@/data/courses_ru.json'
 import { getTranslations } from '@/lib/i18n'
 
 // Статусы активных курсов
@@ -102,7 +102,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
 
   if (!course || !courseInfo) {
     return (
-      <div className="stats bg-base-300 ring-1 ring-primary/30 stats-vertical w-fit">
+      <div className="stats bg-base-300 ring-1 ring-primary/30 stats-vertical">
         <div className="stat flex items-center">
           <div className="avatar avatar-placeholder animate-pulse">
             <div className="w-16 rounded-full">
@@ -145,7 +145,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
   const remainingTasks = totalTasks - completedTasks
 
   const imgSrc = `/images/courses/ec-${courseInfo.id}.png`
-  const courseTitle = lang === 'en' ? (courseInfo.title_en || courseInfo.title_ru) : (courseInfo.title_ru || courseInfo.title_en)
+  const courseTitle = courseInfo.title
 
   return (
     <>
@@ -179,7 +179,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
           </div>
         </div>
       :
-        <div className="stats ring-1 ring-primary/30 stats-vertical md:stats-horizontal grow lg:grow-0">
+        <div className="stats ring-1 ring-primary/30 stats-vertical md:stats-horizontal grow lg:grow-0 lg:w-full flex flex-col sm:flex-row">
           <div className="stat">
             <div className="stat-figure text-secondary">
               <div className="avatar avatar-online">

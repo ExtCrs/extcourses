@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { getTranslations } from '@/lib/i18n'
 import categories from '@/data/courses_categories.json'
-import coursesData from '@/data/courses.json'
+import coursesData from '@/data/courses_ru.json'
 import Breadcrumbs from '@/components/navs/Breadcrumbs'
 import SignUpModal from '@/components/modals/SignUpModal'
 import CourseStats from '@/components/displays/CourseStats'
@@ -46,12 +46,10 @@ export default function CoursesPage({ params }) {
     : coursesData.filter(course => course.category_id === selectedCategory)
 
   const getCourseTitle = (course) => {
-    if (lang === 'en' && course.title_en) return course.title_en
-    return course.title_ru
+    return course.title
   }
   const getCourseIntro = (course) => {
-    if (lang === 'en' && course.intro_en) return course.intro_en
-    return course.intro_ru
+    return course.intro
   }
   const getCourseImg = (course) =>
     `/images/courses/ec-${course.id}.png`
@@ -105,16 +103,18 @@ export default function CoursesPage({ params }) {
             ))}
           </div>
         </div>
-        <CourseStats lang={lang} />
+        {/* <CourseStats lang={lang} /> */}
         {/* name of each tab group should be unique */}
-        {/* <div className="tabs tabs-border justify-center">
-          <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.current_course} defaultChecked />
-          <div className="tab-content overflow-x-scroll p-[2px] pt-px">
-            <CourseStats lang={lang} />
+        <div className="max-w-2xl">
+          <div className="tabs tabs-border justify-center">
+            <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.current_course} defaultChecked />
+            <div className="tab-content overflow-x-scroll p-[2px] pt-px">
+              <CourseStats lang={lang} />
+            </div>
+            <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.completed_courses} />
+            <div className="tab-content">Список завершенных курсов</div>
           </div>
-          <input type="radio" name="courses_tabs" className="tab" aria-label={t.courses.completed_courses} />
-          <div className="tab-content">Список завершенных курсов</div>
-        </div> */}
+        </div>
       </div>
 
       {/* Текущая категория */}

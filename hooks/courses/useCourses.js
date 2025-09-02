@@ -7,7 +7,7 @@ import { COURSE_KEYS } from '@/hooks/common'
 import { usePagination, useSearch, useFilters } from '@/hooks/common'
 import { useProfile } from '@/hooks/auth'
 import { supabase } from '@/lib/supabase/client'
-import coursesList from '@/data/courses.json'
+import coursesList from '@/data/courses_ru.json'
 import categoriesList from '@/data/courses_categories.json'
 
 /**
@@ -21,22 +21,13 @@ export function useCoursesMetadata(lang = 'ru') {
       if (!course.id) return
       
       const courseId = course.id.toString().trim()
-      let title = lang === 'en'
-        ? (typeof course.title_en === 'string' ? course.title_en.trim() : '')
-        : (typeof course.title_ru === 'string' ? course.title_ru.trim() : '')
       
-      if (!title) {
-        title = lang === 'en'
-          ? (typeof course.title_ru === 'string' ? course.title_ru.trim() : '')
-          : (typeof course.title_en === 'string' ? course.title_en.trim() : '')
-      }
-
       map[courseId] = {
         ...course,
-        title: title || courseId,
-        short_title: lang === 'en' ? course.short_title_en : course.short_title_ru,
-        intro: lang === 'en' ? course.intro_en : course.intro_ru,
-        description: lang === 'en' ? course.description_en : course.description_ru
+        title: course.title || courseId,
+        short_title: course.short_title,
+        intro: course.intro,
+        description: course.description
       }
     })
     return map

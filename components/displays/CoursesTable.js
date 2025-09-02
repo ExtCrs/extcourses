@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { MagnifyingGlassIcon, ChevronDownIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { getTranslations } from '@/lib/i18n'
-import coursesList from '@/data/courses.json'
+import coursesList from '@/data/courses_ru.json'
 
 /**
  * Возможные состояния курса (фильтры)
@@ -31,8 +31,8 @@ function getCoursesMapFromFile (lang) {
     if (!course.id) return
     const courseId = course.id.toString().trim()
     const title = lang === 'en'
-      ? (course.title_en?.trim?.() || course.title_ru?.trim?.() || courseId)
-      : (course.title_ru?.trim?.() || course.title_en?.trim?.() || courseId)
+      ? (course.title?.trim?.() || courseId)
+      : (course.title?.trim?.() || courseId)
     map[courseId] = title
   })
   return map

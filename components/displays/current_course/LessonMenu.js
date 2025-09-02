@@ -1,15 +1,15 @@
 
 export default function LessonMenu({ totalLessons, activeLesson, setActiveLesson, getBadge }) {
   return (
-    <ul className={`menu menu-sm menu-horizontal mt-2 border-t border-secondary/10 mb-6 gap-1 justify-center w-full`}>
+    <ul className={`menu menu-sm menu-horizontal mt-2 border-t border-secondary/10 mb-6 mx-3 gap-1 justify-start`}>
       {Array.from({ length: totalLessons }, (_, i) => i + 1).map((num) => (
-        <li key={num} className="max-w-fit font-mono rounded">
+        <li key={num}>
           <button
-            className={`flex flex-col rounded-xl border font-bold ${num === activeLesson ? "menu-active !bg-secondary border-secondary/80" : "!hover:bg-base-100 !border-secondary/20"}`}
+            className={`flex flex-col rounded border font-bold font-mono ${num === activeLesson ? "menu-active !bg-secondary border-secondary/80" : "!hover:bg-base-100 !border-secondary/20"}`}
             onClick={() => setActiveLesson(num)}
           >
             <span className="mx-auto">{getBadge(num)}</span>
-            <span className="min-w-3 text-center text-[14px]">{num}</span>
+            <span className="min-w-3 text-center">{num}</span>
           </button>
         </li>
       ))}

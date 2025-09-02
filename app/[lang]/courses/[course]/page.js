@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import coursesData from '@/data/courses.json'
+import coursesData from '@/data/courses_ru.json'
 import coursesCats from '@/data/courses_categories.json'
 import { getTranslations } from '@/lib/i18n'
 import Breadcrumbs from '@/components/navs/Breadcrumbs'
@@ -21,13 +21,10 @@ export default function CoursePage({ params }) {
   // Находим курс по его url
   const course = coursesData.find(c => c.url === courseUrl)
 
-  // Выбор заголовка по языку, запасной вариант — title_ru
-  const title =
-    (lang === 'en' && course?.title_en) ? course.title_en : (course?.title_ru || t.courses.course_not_found)
-  const intro =
-    (lang === 'en' && course?.intro_en) ? course.intro_en : (course?.intro_ru || t.courses.course_not_found)
-  const description =
-    (lang === 'en' && course?.description_en) ? course.description_en : (course?.description_ru || t.courses.course_not_found)
+  // Выбор заголовка по языку, запасной вариант — title
+  const title = course?.title || t.courses.course_not_found
+  const intro = course?.intro || t.courses.course_not_found
+  const description = course?.description || t.courses.course_not_found
 
   if (!course) {
     // 404 если курс не найден
@@ -40,13 +37,11 @@ export default function CoursePage({ params }) {
 
   // Локализованный заголовок курса
   const getCourseTitle = (course) => {
-    if (lang === 'en' && course.title_en) return course.title_en
-    return course.title_ru
+    return course.title
   }
   // Локализованный intro курса
   const getCourseIntro = (course) => {
-    if (lang === 'en' && course.intro_en) return course.intro_en
-    return course.intro_ru
+    return course.intro
   }
   // Картинка курса
   const getCourseImg = (course) =>

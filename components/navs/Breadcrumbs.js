@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname, useParams } from 'next/navigation'
 import { getTranslations } from '@/lib/i18n'
-import courses from '@/data/courses.json'
+import courses from '@/data/courses_ru.json'
 
 /**
  * Получить заголовок курса по url и текущему языку.
@@ -12,9 +12,7 @@ import courses from '@/data/courses.json'
 function getCourseTitle(courseUrl, lang) {
   const course = courses.find(c => c.url === courseUrl)
   if (!course) return courseUrl
-  return lang === 'ru'
-    ? course.title_ru
-    : course.title_en || course.title_ru
+  return course.title
 }
 
 export default function Breadcrumbs() {

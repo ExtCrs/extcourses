@@ -172,12 +172,12 @@ export function detectCurrentLesson(lessonsMap, totalLessons) {
   for (let lessonNum = 1; lessonNum <= totalLessons; lessonNum++) {
     const status = lessonsMap[lessonNum];
     
-    // Если урок не начат (нет статуса) или статус "rejected"
-    if (!status || status === 'rejected') {
+    // Если урок не начат (нет статуса), имеет статус "in_progress" или "rejected"
+    if (!status || status === 'in_progress' || status === 'rejected') {
       return lessonNum;
     }
   }
   
-  // Если все уроки имеют статус (и ни один не rejected), возвращаем последний
+  // Если все уроки имеют завершенный статус, возвращаем последний
   return totalLessons;
 }

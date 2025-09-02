@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { use } from "react";
 import { getTranslations } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
-import coursesData from "@/data/courses.json";
+import coursesData from "@/data/courses_ru.json";
 import dynamic from "next/dynamic";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import LessonMenu from '@/components/displays/current_course/LessonMenu';
@@ -110,9 +110,6 @@ export default function CurrentCoursePage({ params }) {
   }
 
   const title =
-    courseInfo[`title_${lang}`] ||
-    courseInfo.title_ru ||
-    courseInfo.title_en ||
     courseInfo.title ||
     currentCourse.course_id;
 
