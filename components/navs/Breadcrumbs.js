@@ -1,15 +1,15 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useParams } from 'next/navigation'
 import { getTranslations } from '@/lib/i18n'
-import courses from '@/data/courses_ru.json'
+import { loadCoursesData } from '@/lib/utils/courseDataLoader'
 
 /**
  * Получить заголовок курса по url и текущему языку.
  */
-function getCourseTitle(courseUrl, lang) {
+function getCourseTitle(courseUrl, lang, courses) {
   const course = courses.find(c => c.url === courseUrl)
   if (!course) return courseUrl
   return course.title
@@ -22,6 +22,15 @@ export default function Breadcrumbs() {
   const { t } = getTranslations(lang)
   const breadcrumbsDict = t.breadcrumbs || {}
   const segments = pathname.split('/').filter(Boolean)
+  const [courses, setCourses] = useState([])
+
+  useEffect(() => {
+    const loadData = async () => {
+      const coursesData = await loadCoursesData(lang)
+      setCourses(coursesData)
+    }
+    loadData()
+  }, [lang])
 
   const crumbs = []
 
@@ -56,7 +65,7 @@ export default function Breadcrumbs() {
       segments[idx - 1] === 'courses' &&
       isLast
     ) {
-      label = getCourseTitle(segment, lang)
+      label = getCourseTitle(segment, lang, courses)
     }
     // /admin (или другие уникальные)
     else if (breadcrumbsDict[segment]) {

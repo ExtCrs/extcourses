@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { getTranslations } from '@/lib/i18n'
 import categories from '@/data/courses_categories.json'
-import coursesData from '@/data/courses_ru.json'
+import { loadCoursesData } from '@/lib/utils/courseDataLoader'
 import Breadcrumbs from '@/components/navs/Breadcrumbs'
 import SignUpModal from '@/components/modals/SignUpModal'
 import CourseStats from '@/components/displays/CourseStats'
@@ -19,6 +19,7 @@ export default function CoursesPage({ params }) {
 
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [coursesData, setCoursesData] = useState([])
   const router = useRouter()
 
   // Состояния для модального окна и курса
@@ -27,15 +28,21 @@ export default function CoursesPage({ params }) {
 
   useEffect(() => {
     let isMounted = true
-    const checkAuth = async () => {
+    const initializePage = async () => {
       const { data } = await supabase.auth.getSession()
       if (!data.session && isMounted) {
         router.replace(`/${lang}`)
-      } else if (isMounted) {
+        return
+      }
+      
+      // Load course data based on language
+      const courses = await loadCoursesData(lang)
+      if (isMounted) {
+        setCoursesData(courses)
         setLoading(false)
       }
     }
-    checkAuth()
+    initializePage()
     return () => { isMounted = false }
   }, [lang, router])
 

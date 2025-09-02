@@ -3,6 +3,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { getTranslations } from '@/lib/i18n'
 
@@ -11,6 +12,7 @@ import { getTranslations } from '@/lib/i18n'
  */
 const CoursesButton = ({ lang = 'ru' }) => {
   const [isAuth, setIsAuth] = useState(false)
+  const pathname = usePathname()
   const { t } = getTranslations(lang, 'common')
 
   useEffect(() => {
@@ -22,9 +24,24 @@ const CoursesButton = ({ lang = 'ru' }) => {
 
   if (!isAuth) return null
 
+  // Check if current page is courses related
+  const isActive = pathname.includes('/courses')
+  const linkClass = isActive ? 'text-secondary menu-active' : 'text-secondary'
+
+  const handleClick = (e) => {
+    if (isActive) {
+      e.preventDefault()
+    }
+  }
+
   return (
     <li>
-      <Link className="text-secondary" href={`/${lang}/courses`}>
+      <Link 
+        className={linkClass} 
+        href={`/${lang}/courses`}
+        onClick={handleClick}
+        {...(isActive && { 'aria-disabled': 'true' })}
+      >
         {t.common.go_to_courses}
       </Link>
     </li>

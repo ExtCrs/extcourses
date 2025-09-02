@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import coursesData from '@/data/courses_ru.json'
 import coursesCats from '@/data/courses_categories.json'
 import { getTranslations } from '@/lib/i18n'
+import { loadCoursesData } from '@/lib/utils/courseDataLoader'
 import Breadcrumbs from '@/components/navs/Breadcrumbs'
 import SignUpModal from '@/components/modals/SignUpModal'
 
@@ -17,6 +17,18 @@ export default function CoursePage({ params }) {
   // Состояния для модального окна и курса
   const [modalOpen, setModalOpen] = useState(false)
   const [modalCourse, setModalCourse] = useState({ id: null, title: '' })
+  const [coursesData, setCoursesData] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Load course data based on language
+  useEffect(() => {
+    const loadData = async () => {
+      const courses = await loadCoursesData(lang)
+      setCoursesData(courses)
+      setLoading(false)
+    }
+    loadData()
+  }, [lang])
 
   // Находим курс по его url
   const course = coursesData.find(c => c.url === courseUrl)
@@ -25,6 +37,14 @@ export default function CoursePage({ params }) {
   const title = course?.title || t.courses.course_not_found
   const intro = course?.intro || t.courses.course_not_found
   const description = course?.description || t.courses.course_not_found
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <span className="loading loading-infinity loading-lg" />
+      </div>
+    )
+  }
 
   if (!course) {
     // 404 если курс не найден

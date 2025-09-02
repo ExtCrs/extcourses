@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { use } from "react";
 import { getTranslations } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase/client";
-import coursesData from "@/data/courses_ru.json";
+import { loadCoursesData } from "@/lib/utils/courseDataLoader";
 import dynamic from "next/dynamic";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import LessonMenu from '@/components/displays/current_course/LessonMenu';
@@ -26,10 +26,15 @@ export default function CurrentCoursePage({ params }) {
 
   const [activeLesson, setActiveLesson] = useState(1); // Начальное значение, будет обновлено автоматически
   const [lessonsMap, setLessonsMap] = useState({});
+  const [coursesData, setCoursesData] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
+
+      // Load course data based on language first
+      const coursesData = await loadCoursesData(lang);
+      setCoursesData(coursesData);
 
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -86,7 +91,7 @@ export default function CurrentCoursePage({ params }) {
     }
 
     fetchData();
-  }, []);
+  }, [lang]);
 
   // Сохраняем выбор пользователя в localStorage только при ручном выборе
   useEffect(() => {

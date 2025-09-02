@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
-import coursesData from '@/data/courses_ru.json'
+import { loadCoursesData } from '@/lib/utils/courseDataLoader'
 import { getTranslations } from '@/lib/i18n'
 
 // Статусы активных курсов
@@ -19,6 +19,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
   const [daysFromStart, setDaysFromStart] = useState(null)
   const [startedAt, setStartedAt] = useState(null)
   const [finishedAt, setFinishedAt] = useState(null)
+  const [coursesData, setCoursesData] = useState([])
 
   const formatDate = (date, lang) => {
     if (!(date instanceof Date) || isNaN(date)) return null
@@ -36,6 +37,11 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
   useEffect(() => {
     const fetchCourseStats = async () => {
       setLoading(true)
+      
+      // Load course data based on language first
+      const courses = await loadCoursesData(lang)
+      setCoursesData(courses)
+      
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return setLoading(false)
 
@@ -52,7 +58,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
 
       setCourse(currentCourse)
 
-      const courseMeta = coursesData.find(c => String(c.id) === String(currentCourse.course_id))
+      const courseMeta = courses.find(c => String(c.id) === String(currentCourse.course_id))
       setCourseInfo(courseMeta)
 
       const { data: lessonsData } = await supabase
@@ -90,7 +96,7 @@ const CourseStats = ({ lang = 'ru', IsInside = false }) => {
     }
 
     fetchCourseStats()
-  }, [])
+  }, [lang])
 
   if (loading) {
     return (
